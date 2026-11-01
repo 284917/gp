@@ -1,9 +1,16 @@
-// Автотест основных сценариев: заявка → одобрение куратором → сдача задания → проверка капитаном → баллы → награда.
-// Запуск: npm run build && npm start, затем npm run smoke (нужен playwright с chromium).
+// Автотест всего пути программы на чистой базе.
+// Участников заводит сам через заявки: одобрение куратором → капитан и наставник → сдача задания →
+// проверка капитаном → баллы → обмен на награду → выдача. Плюс телефон и тёмная тема.
+// Запуск: npm run build && npm start, затем npm run smoke. Нужны ADMIN_EMAIL и ADMIN_PASSWORD.
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 const BASE = process.env.BASE_URL || 'http://localhost:3000';
+const ADMIN = { email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD };
+if (!ADMIN.email || !ADMIN.password) {
+  console.error('[smoke] задайте ADMIN_EMAIL и ADMIN_PASSWORD');
+  process.exit(1);
+}
 const OUT = 'screenshots';
 await mkdir(OUT, { recursive: true });
 
@@ -12,6 +19,11 @@ const log = (...a) => console.log('[smoke]', ...a);
 const browser = await chromium.launch();
 const DESKTOP = { viewport: { width: 1366, height: 900 }, locale: 'ru-RU', timezoneId: 'Europe/Moscow' };
 const MOBILE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'ru-RU', timezoneId: 'Europe/Moscow' };
+
+const stamp = Date.now();
+const ANNA = { name: 'Анна Тестова', email: `anna${stamp}@example.com`, password: 'anna-pass-123', segment: 'АЗС и нефтебаза', region: 'omsk', org: 'АЗС № 501', position: 'Оператор АЗС' };
+const BORIS = { name: 'Борис Капитанов', email: `boris${stamp}@example.com`, password: 'boris-pass-123', segment: 'АЗС и нефтебаза', region: 'omsk', org: 'АЗС № 214', position: 'Менеджер АЗС' };
+const SEMYON = { name: 'Семён Студентов', email: `semyon${stamp}@example.com`, password: 'semyon-pass-123', segment: 'Студент колледжа', region: 'omsk', org: 'Нефтяной техникум', position: '2 курс' };
 
 async function page(opts = DESKTOP) {
   const ctx = await browser.newContext(opts);
@@ -34,118 +46,121 @@ async function step(name, fn) {
   try { await fn(); log('ok:', name); }
   catch (e) { problems.push(`шаг «${name}»: ${e.message.split('\n')[0]}`); log('FAIL:', name, e.message); }
 }
-async function demo(p, who) {
+async function loginAs(p, who) {
   await p.goto(`${BASE}/login`);
-  await Promise.all([p.waitForURL(/\/(me|curator)/), p.click(`form.demo-grid button[value="${who}"]`)]);
-}
-async function loginAs(p, email, password) {
-  await p.goto(`${BASE}/login`);
-  await p.fill('#email', email);
-  await p.fill('#password', password);
+  await p.fill('#email', who.email);
+  await p.fill('#password', who.password);
   await Promise.all([p.waitForURL(/\/(me|curator|status)/), p.click('form button[type="submit"]:has-text("Войти")')]);
 }
+async function join(p, who) {
+  await p.goto(`${BASE}/join`);
+  await p.locator('label.seg-card', { hasText: who.segment }).click();
+  await p.fill('#name', who.name);
+  await p.selectOption('#region', who.region);
+  await p.fill('#org', who.org);
+  await p.fill('#position', who.position);
+  await p.fill('#email', who.email);
+  await p.fill('#password', who.password);
+  await p.fill('#motivation', 'Хочу рассказывать о работе и помогать новичкам разобраться, как всё устроено.');
+  await p.check('input[name="consent"]');
+  await Promise.all([p.waitForURL(/\/status/), p.click('button[type="submit"]:has-text("Отправить заявку")')]);
+  await p.getByText('Заявка на рассмотрении').waitFor();
+}
+async function openAmbassador(p, who) {
+  await p.goto(`${BASE}/curator/ambassadors?q=${encodeURIComponent(who.email)}`);
+  await p.locator('a.rowlink', { hasText: who.name }).click();
+  await p.waitForURL(/\/curator\/ambassadors\/\d+/);
+}
 
-const email = `smoke${Date.now()}@example.com`;
-const password = 'smoke-pass-123';
-const NAME = 'Тест Смоуков';
-
-// 1. Публичная часть
-await step('главная, вход и заявка', async () => {
+// 1. Публичная часть и заявки
+await step('главная, вход без демо-доступа, заявки', async () => {
   const p = await page();
   await p.goto(BASE);
   await p.getByRole('heading', { name: /Голос/ }).first().waitFor();
   await shot(p, '01-landing');
   await p.goto(`${BASE}/login`);
+  if (await p.getByText('Демо-доступ').count()) problems.push('на странице входа остался демо-доступ');
   await shot(p, '02-login');
-  await p.goto(`${BASE}/join`);
-  await p.locator('label.seg-card', { hasText: 'АЗС и нефтебаза' }).click();
-  await p.fill('#name', NAME);
-  await p.selectOption('#region', 'omsk');
-  await p.fill('#org', 'АЗС № 501');
-  await p.fill('#position', 'Оператор АЗС');
-  await p.fill('#email', email);
-  await p.fill('#password', password);
-  await p.fill('#motivation', 'Хочу рассказывать о работе на АЗС и помогать студентам колледжа с практикой.');
-  await p.check('input[name="consent"]');
-  await shot(p, '03-join-filled');
-  await Promise.all([p.waitForURL(/\/status/), p.click('button[type="submit"]:has-text("Отправить заявку")')]);
-  await p.getByText('Заявка на рассмотрении').waitFor();
-  await shot(p, '04-status-pending');
+  await join(p, ANNA);
+  await shot(p, '03-status-pending');
+  await p.context().clearCookies();
+  await join(p, BORIS);
+  await p.context().clearCookies();
+  await join(p, SEMYON);
   await p.context().close();
 });
 
-// 1б. Вход куратора по почте и паролю (аккаунт из ADMIN_EMAIL / ADMIN_PASSWORD)
-if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
-  await step('вход куратора по паролю', async () => {
-    const p = await page();
-    await loginAs(p, process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
-    await p.waitForURL(/\/curator$/);
-    await p.getByRole('heading', { name: 'Обзор программы' }).waitFor();
-    await p.goto(`${BASE}/curator/account`);
-    await p.getByText('Смена пароля').waitFor();
-    await p.context().close();
-  });
-}
-
-// 2. Куратор: одобряет заявку, публикует задание, смотрит разделы
-await step('куратор', async () => {
+// 2. Куратор: принимает заявки, назначает капитана, наставника, бонус; публикует задание; вносит метрики
+await step('куратор настраивает программу', async () => {
   const p = await page();
-  await demo(p, 'curator');
+  await loginAs(p, ADMIN);
+  await p.waitForURL(/\/curator$/);
   await p.getByRole('heading', { name: 'Обзор программы' }).waitFor();
-  await shot(p, '10-curator-overview');
+  await shot(p, '10-curator-overview-empty');
   await p.goto(`${BASE}/curator/applications`);
-  const card = p.locator('article.mod', { hasText: NAME });
-  await card.getByRole('button', { name: 'Принять в программу' }).click();
-  await card.waitFor({ state: 'detached', timeout: 15000 });
   await shot(p, '11-curator-applications');
-  await p.goto(`${BASE}/curator/moderation?f=all`);
-  await shot(p, '12-curator-moderation');
-  await p.goto(`${BASE}/curator/ambassadors`);
-  await shot(p, '13-curator-ambassadors');
-  await p.locator('a.rowlink').first().click();
-  await p.waitForURL(/\/curator\/ambassadors\/\d+/);
-  await shot(p, '14-curator-ambassador');
-  await p.goto(`${BASE}/curator/tasks/new`);
-  await p.fill('#title', 'Смоук: фото рабочего места');
-  await p.fill('#why', 'Проверка публикации задания.');
-  await p.fill('#steps', 'Шаг один\nШаг два');
-  await shot(p, '15-curator-task-new');
-  await Promise.all([p.waitForURL(/\/curator\/tasks\?ok=1/), p.click('button[type="submit"]:has-text("Опубликовать задание")')]);
-  await p.getByText('Смоук: фото рабочего места').waitFor();
-  await shot(p, '16-curator-tasks');
-  for (const [path, name] of [['rewards', '17-curator-rewards'], ['regions', '18-curator-regions'], ['metrics', '19-curator-metrics']]) {
-    await p.goto(`${BASE}/curator/${path}`);
-    await shot(p, name);
+  for (const who of [ANNA, BORIS, SEMYON]) {
+    const card = p.locator('article.mod', { hasText: who.name });
+    await card.getByRole('button', { name: 'Принять в программу' }).click();
+    await card.waitFor({ state: 'detached', timeout: 15000 });
   }
+  await openAmbassador(p, BORIS);
+  await p.getByRole('button', { name: 'Назначить капитаном региона' }).click();
+  await p.getByText('капитан региона', { exact: true }).waitFor();
+  await openAmbassador(p, SEMYON);
+  await p.selectOption('select[name="mentorId"]', { label: `${ANNA.name} — ${ANNA.segment}, Омск` });
+  await p.getByRole('button', { name: 'Сохранить наставника' }).click();
+  await p.waitForLoadState('networkidle');
+  await openAmbassador(p, ANNA);
+  await p.fill('input[name="amount"]', '200');
+  await p.fill('input[name="reason"]', 'Помощь на дне открытых дверей');
+  await p.getByRole('button', { name: 'Начислить' }).click();
+  await p.getByText('Помощь на дне открытых дверей').waitFor();
+  await shot(p, '12-curator-ambassador');
+  await p.goto(`${BASE}/curator/tasks/new`);
+  await p.fill('#title', 'Фото рабочего места к зиме');
+  await p.fill('#why', 'Показать, как объекты готовятся к холодам.');
+  await p.fill('#steps', 'Сфотографируйте рабочее место в разрешённой зоне\nДобавьте одну фразу о работе');
+  await Promise.all([p.waitForURL(/\/curator\/tasks\?ok=1/), p.click('button[type="submit"]:has-text("Опубликовать задание")')]);
+  await p.getByText('Фото рабочего места к зиме').waitFor();
+  await shot(p, '13-curator-tasks');
+  await p.goto(`${BASE}/curator/metrics`);
+  await p.fill('#m-reach', '12000');
+  await p.fill('#m-interactions', '540');
+  await p.fill('#m-careerVisits', '80');
+  await p.fill('#m-applications', '12');
+  await Promise.all([p.waitForURL(/ok=/), p.click('button[type="submit"]:has-text("Сохранить")')]);
+  await shot(p, '14-curator-metrics');
+  await p.goto(`${BASE}/curator/account`);
+  await p.getByText('Смена пароля').waitFor();
   await p.context().close();
 });
 
-// 3. Новый амбассадор сдаёт задание
+// 3. Амбассадор сдаёт задание
 let taskUrl = '';
 await step('амбассадор сдаёт задание', async () => {
   const p = await page();
-  await loginAs(p, email, password);
+  await loginAs(p, ANNA);
   await p.waitForURL(/\/me$/);
-  await shot(p, '20-new-ambassador-home');
+  await shot(p, '20-anna-home');
   await p.goto(`${BASE}/me/tasks`);
-  await p.getByText('Смоук: фото рабочего места').waitFor();
-  await shot(p, '21-new-ambassador-tasks');
+  await p.getByText('Фото рабочего места к зиме').waitFor();
   await p.locator('a.task', { hasText: 'Наставник недели' }).first().click();
   await p.waitForURL(/\/me\/tasks\/\d+/);
   taskUrl = p.url();
   await p.fill('#body', 'Мой наставник Андрей научил спокойно работать в час пик и всегда помогал с вопросами.');
   await Promise.all([p.waitForURL(/sent=1/), p.click('button[type="submit"]:has-text("Отправить на проверку")')]);
   await p.getByText('Задание отправлено').waitFor();
-  await shot(p, '22-task-sent');
+  await shot(p, '21-task-sent');
   await p.context().close();
 });
 
-// 4. Капитан региона проверяет
+// 4. Капитан региона принимает
 await step('капитан принимает задание', async () => {
   const p = await page();
-  await demo(p, 'captain');
+  await loginAs(p, BORIS);
   await p.goto(`${BASE}/me/review`);
-  const card = p.locator('article.mod', { hasText: NAME });
+  const card = p.locator('article.mod', { hasText: ANNA.name });
   await card.waitFor();
   await shot(p, '30-captain-review');
   await card.getByRole('button', { name: 'Принять' }).click();
@@ -153,83 +168,88 @@ await step('капитан принимает задание', async () => {
   await p.context().close();
 });
 
-// 5. Баллы начислены
-await step('баллы у амбассадора', async () => {
+// 5. Баллы и награда
+await step('баллы и обмен на награду', async () => {
   const p = await page();
-  await loginAs(p, email, password);
-  await p.locator('.level-top b', { hasText: '60' }).waitFor();
+  await loginAs(p, ANNA);
+  await p.locator('.level-top b', { hasText: '260' }).waitFor();
   await p.goto(taskUrl);
   await p.getByText('Задание выполнено и принято').waitFor();
-  await p.goto(`${BASE}/me/notifications`);
-  await p.getByText('принято: +60 баллов').first().waitFor();
-  await shot(p, '31-notifications');
-  await p.context().close();
-});
-
-// 6. Демо-амбассадор: награды и остальные разделы
-await step('демо-амбассадор', async () => {
-  const p = await page();
-  await demo(p, 'ambassador');
-  await shot(p, '40-alina-home');
   await p.goto(`${BASE}/me/rewards`);
-  const first = p.locator('.rw summary', { hasText: 'Обменять' }).first();
-  await first.click();
+  await p.locator('.rw', { hasText: 'Стикеры и значок программы' }).locator('summary').click();
   await Promise.all([p.waitForURL(/ok=/), p.locator('.rw details[open] button[type="submit"]').click()]);
-  await shot(p, '41-alina-rewards');
-  for (const [path, name] of [['tasks', '42-alina-tasks'], ['kit', '43-alina-kit'], ['rating', '44-alina-rating'], ['profile', '45-alina-profile']]) {
+  await shot(p, '31-anna-rewards');
+  for (const [path, name] of [['notifications', '32-notifications'], ['kit', '33-kit'], ['rating', '34-rating'], ['profile', '35-profile']]) {
     await p.goto(`${BASE}/me/${path}`);
     await shot(p, name);
   }
-  await p.locator('a.task', { hasText: 'Голосовая история' }).first().waitFor({ timeout: 2000 }).catch(() => {});
+  await p.context().close();
+});
+
+await step('куратор выдаёт награду', async () => {
+  const p = await page();
+  await loginAs(p, ADMIN);
+  await p.goto(`${BASE}/curator/rewards`);
+  const card = p.locator('article.mod', { hasText: ANNA.name });
+  await card.getByRole('button', { name: 'Выдано' }).click();
+  await card.waitFor({ state: 'detached', timeout: 15000 });
+  for (const [path, name] of [['', '40-curator-overview'], ['/moderation', '41-curator-moderation'], ['/ambassadors', '42-curator-ambassadors'], ['/regions', '43-curator-regions']]) {
+    await p.goto(`${BASE}/curator${path}`);
+    await shot(p, name);
+  }
+  await p.context().close();
+});
+
+// 6. Студент видит наставника
+await step('студент и тандем', async () => {
+  const p = await page();
+  await loginAs(p, SEMYON);
+  await p.getByText('Анна', { exact: false }).first().waitFor();
+  await shot(p, '50-student-home');
   await p.context().close();
 });
 
 // 7. Телефон и тёмная тема
 await step('мобильная версия', async () => {
   const p = await page(MOBILE);
-  for (const [path, name] of [['/', '50-m-landing'], ['/login', '50-m-login'], ['/join', '50-m-join']]) {
+  for (const [path, name] of [['/', '60-m-landing'], ['/login', '60-m-login'], ['/join', '60-m-join']]) {
     await p.goto(`${BASE}${path}`);
     await noOverflow(p, 'телефон');
     await shot(p, name);
   }
-  await demo(p, 'student');
-  await shot(p, '51-m-student-home');
-  await noOverflow(p, 'телефон');
-  for (const [path, name] of [['tasks', '52-m-tasks'], ['kit', '53-m-kit'], ['rewards', '54-m-rewards'], ['rating', '54-m-rating'], ['profile', '54-m-profile'], ['notifications', '54-m-notifications']]) {
-    await p.goto(`${BASE}/me/${path}`);
+  await loginAs(p, ANNA);
+  for (const [path, name] of [['', '61-m-home'], ['/tasks', '62-m-tasks'], ['/kit', '63-m-kit'], ['/rewards', '64-m-rewards'], ['/rating', '65-m-rating'], ['/profile', '66-m-profile'], ['/notifications', '67-m-notifications']]) {
+    await p.goto(`${BASE}/me${path}`);
     await noOverflow(p, 'телефон');
     await shot(p, name);
   }
-  await p.locator('a.task').first().click().catch(() => {});
-  await p.waitForURL(/\/me\/tasks\/\d+/).catch(() => {});
+  await p.goto(taskUrl);
   await noOverflow(p, 'телефон');
-  await shot(p, '54-m-task');
   await p.context().close();
   const c = await page(MOBILE);
-  await demo(c, 'curator');
-  await shot(c, '55-m-curator');
-  for (const path of ['', '/moderation', '/applications', '/ambassadors', '/tasks', '/tasks/new', '/rewards', '/regions', '/metrics']) {
+  await loginAs(c, ADMIN);
+  await shot(c, '68-m-curator');
+  for (const path of ['', '/moderation', '/applications', '/ambassadors', '/tasks', '/tasks/new', '/rewards', '/regions', '/metrics', '/account']) {
     await c.goto(`${BASE}/curator${path}`);
     await noOverflow(c, 'телефон, куратор');
   }
   await c.context().close();
   const cap = await page(MOBILE);
-  await demo(cap, 'captain');
+  await loginAs(cap, BORIS);
   await cap.goto(`${BASE}/me/review`);
   await noOverflow(cap, 'телефон, капитан');
-  await shot(cap, '56-m-captain-review');
   await cap.context().close();
 });
 
 await step('тёмная тема', async () => {
   const p = await page({ ...DESKTOP, colorScheme: 'dark' });
-  await demo(p, 'captain');
-  await shot(p, '60-dark-captain-home');
+  await loginAs(p, ANNA);
+  await shot(p, '70-dark-home');
   await p.context().close();
   const c = await page({ ...DESKTOP, colorScheme: 'dark' });
-  await demo(c, 'curator');
+  await loginAs(c, ADMIN);
   await c.goto(`${BASE}/curator/regions`);
-  await shot(c, '61-dark-regions');
+  await shot(c, '71-dark-regions');
   await c.context().close();
 });
 

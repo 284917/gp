@@ -25,7 +25,8 @@ export default async function RegionsPage() {
   const map: MapRegion[] = rows.map((r) => ({ id: r.id, city: r.city, lon: r.lon, lat: r.lat, tz: r.tz, total: r.internal + r.external, activePct: pct(r.active14, r.internal + r.external), hasCaptain: Boolean(r.captain) }));
   const weak = map.filter((r) => r.total && (r.activePct < 50 || !r.hasCaptain)).map((r) => r.city);
   const farTz = Math.max(...rows.map((r) => r.tz));
-  const status = (r: MapRegion) => !r.hasCaptain ? <span className="chip bad">нужен капитан</span>
+  const status = (r: MapRegion) => !r.total ? <span className="chip">пока нет амбассадоров</span>
+    : !r.hasCaptain ? <span className="chip bad">нужен капитан</span>
     : r.activePct < 50 ? <span className="chip bad">нужен выезд</span>
     : r.activePct < 70 ? <span className="chip warn">под наблюдением</span>
     : <span className="chip good">в норме</span>;
@@ -40,11 +41,12 @@ export default async function RegionsPage() {
           <span><i className="dot good" />активны 70% и больше</span>
           <span><i className="dot warn" />50–69%</span>
           <span><i className="dot bad" />меньше 50%</span>
+          <span><i className="dot empty" />нет амбассадоров</span>
           <span>пунктир — нет капитана · число — амбассадоров</span>
         </div>
       </section>
       <div className="grid-3">
-        <section className="card"><h3 className="h3">Капитан в каждом регионе</h3><p className="sub">Амбассадор уровня «Лидер» проверяет задания, ведёт чат региона и раз в две недели созванивается с куратором. Капитаны есть в {map.filter((r) => r.hasCaptain).length} регионах из {map.length}.</p></section>
+        <section className="card"><h3 className="h3">Капитан в каждом регионе</h3><p className="sub">Амбассадор уровня «Лидер» проверяет задания, ведёт чат региона и раз в две недели созванивается с куратором. Капитаны есть в {map.filter((r) => r.hasCaptain).length} из {map.length} регионов.</p></section>
         <section className="card"><h3 className="h3">Созвоны с учётом поясов</h3><p className="sub">10:00 в Санкт-Петербурге — уже {10 + farTz}:00 в самых восточных регионах ({tzLabel(farTz)}). Общие эфиры ставим на 10–12 по Москве, записи остаются в канале амбассадоров.</p></section>
         <section className="card"><h3 className="h3">Выезд куратора раз в сезон</h3><p className="sub">{weak.length ? `В первую очередь — туда, где активность ниже 50% или нет капитана: ${weak.join(', ')}.` : 'Сейчас все регионы в норме — выезды можно планировать на фестиваль в апреле.'} Остальным — онлайн-форматы.</p></section>
       </div>

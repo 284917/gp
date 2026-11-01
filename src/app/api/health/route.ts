@@ -14,7 +14,6 @@ export async function GET() {
       users: row.users,
       tasks: row.tasks,
       uploads: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
-      demo: process.env.DEMO_MODE !== 'false',
     });
   } catch (err) {
     return NextResponse.json({ ok: false, database: 'error', message: err instanceof Error ? err.message : String(err) }, { status: 503 });

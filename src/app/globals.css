@@ -299,9 +299,6 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
   .auth-side .hide-sm { display: none; }
   .auth-main { padding: 28px var(--gut-r) 48px var(--gut); align-items: flex-start; }
 }
-.demo-box { border: 1px dashed var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
-.demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.demo-grid .btn { justify-content: flex-start; white-space: normal; text-align: left; }
 .seg-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 520px) { .seg-cards { grid-template-columns: minmax(0, 1fr); } }
 .seg-card { position: relative; display: flex; flex-direction: column; gap: 3px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 13px 14px; cursor: pointer; }
@@ -502,6 +499,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
 .c-good { fill: var(--good-soft); stroke: var(--good); stroke-width: 2; }
 .c-warn { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 2; }
 .c-bad { fill: var(--bad-soft); stroke: var(--bad); stroke-width: 2; }
+.c-empty { fill: var(--surface-2); stroke: var(--line); stroke-width: 2; }
+.dot.empty { background: var(--line); }
 .hub-ring { fill: none; stroke: var(--brand); stroke-width: 2; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
 .dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }

@@ -111,5 +111,4 @@ export async function requireAmbassador() {
   return u;
 }
 
-export const isDemoMode = () => process.env.DEMO_MODE !== 'false';
 export const blobEnabled = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);

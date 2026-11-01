@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { requireCurator } from '@/lib/auth';
 import { getProgramStats, METRIC_STATUS } from '@/lib/stats';
 import { SEGMENTS, TARGETS } from '@/lib/domain';
-import { fmtCompact, fmtNum, pct } from '@/lib/format';
+import { fmtCompact, fmtNum, pct, plural } from '@/lib/format';
 import { PageHead } from '@/components/ui';
 import { LineChart } from '@/components/charts';
 
@@ -69,7 +69,7 @@ export default async function CuratorOverview() {
           ) : null}
           <ul className="list" style={{ fontSize: 14 }}>
             <li><b style={{ fontWeight: 600 }}>Без капитанов</b><br /><span className="sub">{Math.round(s.total / 4)} амбассадоров и {Math.round(reviews / 4)} проверок в месяц на каждого из четырёх кураторов.</span></li>
-            <li><b style={{ fontWeight: 600 }}>С капитанами</b><br /><span className="sub">{Math.round(s.load.curator / 4)} проверок на куратора. Капитаны закрывают {capShare}% работы{s.att.noCaptain ? `, капитан нужен ещё в ${s.att.noCaptain} регионе` : ''}.</span></li>
+            <li><b style={{ fontWeight: 600 }}>С капитанами</b><br /><span className="sub">{Math.round(s.load.curator / 4)} проверок на куратора. Капитаны закрывают {capShare}% работы{s.att.noCaptain ? `, капитан нужен ещё в ${s.att.noCaptain} ${plural(s.att.noCaptain, 'регионе', 'регионах', 'регионах')}` : ''}.</span></li>
           </ul>
         </section>
       </div>

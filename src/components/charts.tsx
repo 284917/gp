@@ -52,7 +52,7 @@ export function RegionMap({ regions, hubId = 'spb' }: { regions: MapRegion[]; hu
   const hub = regions.find((r) => r.id === hubId) ?? regions[0];
   if (!hub) return null;
   const hx = px(hub.lon), hy = py(hub.lat);
-  const st = (r: MapRegion) => (r.activePct >= 70 ? 'good' : r.activePct >= 50 ? 'warn' : 'bad');
+  const st = (r: MapRegion) => (!r.total ? 'empty' : r.activePct >= 70 ? 'good' : r.activePct >= 50 ? 'warn' : 'bad');
   const rad = (r: MapRegion) => 5 + Math.sqrt(Math.max(1, r.total)) * 2.2;
   return (
     <svg className="map" viewBox="0 0 1000 345" role="img" aria-label="Схема регионов программы с часовыми поясами">
@@ -77,7 +77,7 @@ export function RegionMap({ regions, hubId = 'spb' }: { regions: MapRegion[]; hu
           <g key={r.id}>
             <title>{`${r.city}: ${r.total} амбассадоров, активны ${r.activePct}%, ${tzLabel(r.tz)}${r.hasCaptain ? '' : ', нет капитана'}`}</title>
             {isHub ? <circle className="hub-ring" cx={x} cy={y} r={rr + 6} /> : null}
-            <circle className={`c-${st(r)}`} cx={x} cy={y} r={rr} strokeDasharray={r.hasCaptain || isHub ? undefined : '3 3'} />
+            <circle className={`c-${st(r)}`} cx={x} cy={y} r={rr} strokeDasharray={r.hasCaptain || isHub || !r.total ? undefined : '3 3'} />
             <text className="map-num" x={x} y={y + 4} textAnchor="middle">{r.total}</text>
             {isHub ? (
               <>

@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { compare, hash } from 'bcryptjs';
 import { db } from '@/lib/db';
-import { createSession, destroySession, isDemoMode } from '@/lib/auth';
+import { createSession, destroySession } from '@/lib/auth';
 import { isSegment } from '@/lib/domain';
 
 export type FormState = { error?: string; ok?: string; values?: Record<string, string> };
@@ -73,23 +73,6 @@ export async function join(_prev: FormState, fd: FormData): Promise<FormState> {
     returning id`;
   await createSession(row.id);
   redirect('/status');
-}
-
-const DEMO_ACCOUNTS: Record<string, string> = {
-  curator: 'kurator1@demo.golos',
-  ambassador: 'alina@demo.golos',
-  captain: 'oleg@demo.golos',
-  student: 'daniil@demo.golos',
-};
-
-export async function demoLogin(fd: FormData) {
-  if (!isDemoMode()) redirect('/login');
-  const email = DEMO_ACCOUNTS[str(fd, 'who')];
-  if (!email) redirect('/login');
-  const rows = await db()<{ id: number; role: string }[]>`select id, role from users where email = ${email} and is_demo`;
-  if (!rows[0]) redirect('/login?demo=missing');
-  await createSession(rows[0].id);
-  redirect(rows[0].role === 'curator' ? '/curator' : '/me');
 }
 
 export async function logout() {

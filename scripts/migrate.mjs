@@ -4,7 +4,7 @@ import postgres from 'postgres';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { seedBase, seedAdmin, seedDemo } from './seed.mjs';
+import { seedBase, seedAdmin } from './seed.mjs';
 
 // Для миграций берём прямое подключение без пула, если оно есть (Neon и Vercel его выдают).
 const url =
@@ -36,7 +36,6 @@ try {
     }
     await seedBase(tx);
     await seedAdmin(tx);
-    if (process.env.DEMO_MODE !== 'false') await seedDemo(tx);
   });
   console.log('[db] база данных готова');
 } catch (err) {

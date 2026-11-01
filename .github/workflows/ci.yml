@@ -24,7 +24,6 @@ jobs:
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/golos
       AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789
-      DEMO_MODE: 'true'
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD: admin-password-123
       NEXT_TELEMETRY_DISABLED: '1'
