@@ -279,14 +279,14 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
 .faq details[open] summary::after { content: '−'; }
 .faq details p { margin-top: 10px; color: var(--muted); }
 .cta-band { background: linear-gradient(135deg, var(--brand-deep), var(--brand)); color: var(--on-brand); border-radius: 24px; padding: 40px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; position: relative; overflow: hidden; }
-.cta-band .h1 { color: var(--on-brand); max-width: 16ch; }
+.cta-band .h1 { color: var(--on-brand); max-width: 24ch; }
 .cta-band .btn { background: var(--on-brand); color: var(--brand-deep); border-color: var(--on-brand); }
 .site-foot { padding-block: 32px 40px; color: var(--muted); font-size: 13px; }
 .site-foot .container { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
 /* вход и заявка */
 .auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.auth-side { background: linear-gradient(150deg, var(--brand-deep), var(--brand)); color: var(--on-brand); padding: 40px; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; position: relative; overflow: hidden; }
+.auth-side { background: linear-gradient(150deg, var(--brand-deep), var(--brand)); color: var(--on-brand); padding: 40px; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; position: sticky; top: 0; height: 100dvh; overflow: hidden; }
 .auth-side .brand-name { color: var(--on-brand); }
 .auth-side .display { color: var(--on-brand); font-size: clamp(40px, 5vw, 68px); }
 .auth-main { padding: 40px max(24px, env(safe-area-inset-right, 0px)) 40px max(24px, env(safe-area-inset-left, 0px)); display: flex; align-items: center; justify-content: center; }
@@ -294,7 +294,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
 .auth-box.wide { max-width: 620px; }
 @media (max-width: 900px) {
   .auth { grid-template-columns: minmax(0, 1fr); }
-  .auth-side { padding: 24px var(--gut-r) 28px var(--gut); }
+  .auth-side { padding: 24px var(--gut-r) 28px var(--gut); position: static; height: auto; }
   .auth-side .display { font-size: 40px; }
   .auth-side .hide-sm { display: none; }
   .auth-main { padding: 28px var(--gut-r) 48px var(--gut); align-items: flex-start; }
@@ -429,7 +429,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
 .status-box { max-width: 560px; width: 100%; display: grid; gap: 18px; }
 
 /* ---------- кабинет куратора ---------- */
-.cur { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100dvh; }
+.cur-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100dvh; }
 .cur-side { position: sticky; top: 0; height: 100dvh; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 18px; padding: 20px 14px; overflow-y: auto; }
 .cur-side .brand { padding: 0 8px; }
 .cur-nav { display: grid; gap: 2px; }
@@ -440,7 +440,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
 .cur-user { margin-top: auto; display: grid; gap: 10px; padding: 12px 8px 0; border-top: 1px solid var(--line); }
 .cur-main { padding: 28px max(28px, env(safe-area-inset-right, 0px)) 56px 28px; min-width: 0; max-width: 1240px; width: 100%; }
 @media (max-width: 960px) {
-  .cur { grid-template-columns: minmax(0, 1fr); }
+  .cur-shell { grid-template-columns: minmax(0, 1fr); }
   .cur-side { position: sticky; top: 0; z-index: 20; height: auto; flex-direction: row; align-items: center; gap: 8px; padding: 10px var(--gut-r) 10px var(--gut); border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: visible; scrollbar-width: none; }
   .cur-side .brand-name, .cur-user { display: none; }
   .cur-nav { display: flex; gap: 2px; }

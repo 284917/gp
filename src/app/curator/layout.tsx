@@ -17,7 +17,7 @@ export default async function CuratorLayout({ children }: { children: React.Reac
            (select count(*)::int from users where role = 'ambassador' and status = 'pending') as applications,
            (select count(*)::int from redemptions where status = 'requested') as redemptions`;
   return (
-    <div className="cur">
+    <div className="cur-shell">
       <aside className="cur-side">
         <Link href="/curator" className="brand" aria-label="Голос компании — обзор">
           <Mark />
