@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: golos
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/golos
+      AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789
+      DEMO_MODE: 'true'
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: admin-password-123
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Установка зависимостей
+        run: npm install --no-audit --no-fund
+
+      - name: Сборка (миграции, начальные данные, next build)
+        run: npm run build
+
+      - name: Повторный запуск миграций ничего не ломает
+        run: npm run db:migrate
+
+      - name: Браузер для автотестов
+        run: npx playwright install --with-deps chromium
+
+      - name: Запуск приложения
+        run: |
+          npm start > server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/api/health; then echo; break; fi
+            sleep 1
+          done
+
+      - name: Автотест основных сценариев
+        run: npm run smoke
+
+      - name: Скриншоты и логи
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            screenshots
+            server.log
+            package-lock.json
+          if-no-files-found: ignore
+          retention-days: 14
