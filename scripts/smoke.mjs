@@ -26,6 +26,10 @@ async function shot(p, name) {
   await p.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
   log('скриншот', name);
 }
+async function noOverflow(p, label) {
+  const extra = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  if (extra > 1) problems.push(`${label}: страница шире экрана на ${extra}px (${p.url()})`);
+}
 async function step(name, fn) {
   try { await fn(); log('ok:', name); }
   catch (e) { problems.push(`шаг «${name}»: ${e.message.split('\n')[0]}`); log('FAIL:', name, e.message); }
@@ -170,21 +174,38 @@ await step('демо-амбассадор', async () => {
 // 7. Телефон и тёмная тема
 await step('мобильная версия', async () => {
   const p = await page(MOBILE);
-  await p.goto(BASE);
-  await shot(p, '50-m-landing');
-  await demo(p, 'student');
-  await shot(p, '51-m-student-home');
-  for (const [path, name] of [['tasks', '52-m-tasks'], ['kit', '53-m-kit'], ['rewards', '54-m-rewards']]) {
-    await p.goto(`${BASE}/me/${path}`);
+  for (const [path, name] of [['/', '50-m-landing'], ['/login', '50-m-login'], ['/join', '50-m-join']]) {
+    await p.goto(`${BASE}${path}`);
+    await noOverflow(p, 'телефон');
     await shot(p, name);
   }
-  const wide = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
-  if (wide) problems.push('мобильная версия: горизонтальная прокрутка на /me/rewards');
+  await demo(p, 'student');
+  await shot(p, '51-m-student-home');
+  await noOverflow(p, 'телефон');
+  for (const [path, name] of [['tasks', '52-m-tasks'], ['kit', '53-m-kit'], ['rewards', '54-m-rewards'], ['rating', '54-m-rating'], ['profile', '54-m-profile'], ['notifications', '54-m-notifications']]) {
+    await p.goto(`${BASE}/me/${path}`);
+    await noOverflow(p, 'телефон');
+    await shot(p, name);
+  }
+  await p.locator('a.task').first().click().catch(() => {});
+  await p.waitForURL(/\/me\/tasks\/\d+/).catch(() => {});
+  await noOverflow(p, 'телефон');
+  await shot(p, '54-m-task');
   await p.context().close();
   const c = await page(MOBILE);
   await demo(c, 'curator');
   await shot(c, '55-m-curator');
+  for (const path of ['', '/moderation', '/applications', '/ambassadors', '/tasks', '/tasks/new', '/rewards', '/regions', '/metrics']) {
+    await c.goto(`${BASE}/curator${path}`);
+    await noOverflow(c, 'телефон, куратор');
+  }
   await c.context().close();
+  const cap = await page(MOBILE);
+  await demo(cap, 'captain');
+  await cap.goto(`${BASE}/me/review`);
+  await noOverflow(cap, 'телефон, капитан');
+  await shot(cap, '56-m-captain-review');
+  await cap.context().close();
 });
 
 await step('тёмная тема', async () => {

@@ -72,7 +72,7 @@ export function RegionMap({ regions, hubId = 'spb' }: { regions: MapRegion[]; hu
       {regions.map((r) => {
         const x = px(r.lon), y = py(r.lat), rr = rad(r);
         const isHub = r.id === hub.id;
-        const [dx, dy, anchor] = LABELS[r.id] ?? [0, -rr - 6, 'middle'];
+        const [dx, dy, anchor] = LABELS[r.id] ?? ([0, -rr - 6, 'middle'] as [number, number, 'middle']);
         return (
           <g key={r.id}>
             <title>{`${r.city}: ${r.total} амбассадоров, активны ${r.activePct}%, ${tzLabel(r.tz)}${r.hasCaptain ? '' : ', нет капитана'}`}</title>
