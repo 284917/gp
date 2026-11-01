@@ -95,7 +95,7 @@ export default async function CuratorOverview() {
               <li key={name}>
                 <span>{name}</span>
                 <span className="v">{fmtNum(v)}</span>
-                {i && funnel[i - 1][1] ? <span className="c">конверсия из предыдущего шага {((v / funnel[i - 1][1]) * 100).toFixed(1).replace('.', ',')}%</span> : null}
+                {i > 0 && funnel[i - 1][1] ? <span className="c">конверсия из предыдущего шага {((v / funnel[i - 1][1]) * 100).toFixed(1).replace('.', ',')}%</span> : null}
               </li>
             ))}
           </ul>

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { compare, hash } from 'bcryptjs';
 import { db } from '@/lib/db';
-import { requireAmbassador, requireMember } from '@/lib/auth';
+import { requireAmbassador, requireMember, requireUser } from '@/lib/auth';
 import { groupOf, levelOf } from '@/lib/domain';
 import type { FormState } from './auth';
 
@@ -84,7 +84,7 @@ export async function updateProfile(_prev: FormState, fd: FormData): Promise<For
 }
 
 export async function changePassword(_prev: FormState, fd: FormData): Promise<FormState> {
-  const u = await requireMember();
+  const u = await requireUser();
   const current = String(fd.get('current') ?? '');
   const next = String(fd.get('next') ?? '');
   if (next.length < 8) return { error: 'Новый пароль должен быть не короче 8 символов.' };

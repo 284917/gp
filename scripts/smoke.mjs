@@ -74,6 +74,19 @@ await step('главная, вход и заявка', async () => {
   await p.context().close();
 });
 
+// 1б. Вход куратора по почте и паролю (аккаунт из ADMIN_EMAIL / ADMIN_PASSWORD)
+if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+  await step('вход куратора по паролю', async () => {
+    const p = await page();
+    await loginAs(p, process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
+    await p.waitForURL(/\/curator$/);
+    await p.getByRole('heading', { name: 'Обзор программы' }).waitFor();
+    await p.goto(`${BASE}/curator/account`);
+    await p.getByText('Смена пароля').waitFor();
+    await p.context().close();
+  });
+}
+
 // 2. Куратор: одобряет заявку, публикует задание, смотрит разделы
 await step('куратор', async () => {
   const p = await page();

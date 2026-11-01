@@ -32,7 +32,10 @@ export default async function CuratorLayout({ children }: { children: React.Reac
               <p className="fine">{SCOPE_LABEL[c.curatorScope ?? 'all']}</p>
             </div>
           </div>
-          <form action={logout}><button type="submit" className="btn small ghost"><Icon name="logout" size={16} /> Выйти</button></form>
+          <div className="row" style={{ '--gap': '4px' } as React.CSSProperties}>
+            <Link href="/curator/account" className="btn small ghost"><Icon name="lock" size={16} /> Пароль</Link>
+            <form action={logout}><button type="submit" className="btn small ghost"><Icon name="logout" size={16} /> Выйти</button></form>
+          </div>
         </div>
       </aside>
       <main className="cur-main">{children}</main>

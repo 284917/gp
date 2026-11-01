@@ -20,13 +20,19 @@ export async function login(_prev: FormState, fd: FormData): Promise<FormState> 
   const password = String(fd.get('password') ?? '');
   const next = safeNext(str(fd, 'next'));
   if (!email || !password) return { error: 'Введите почту и пароль.', values: { email } };
-  const rows = await db()<{ id: number; passwordHash: string; role: string }[]>`
-    select id, password_hash, role from users where email = ${email}`;
-  const u = rows[0];
-  if (!u || !(await compare(password, u.passwordHash))) {
-    return { error: 'Неверная почта или пароль.', values: { email } };
+  let u: { id: number; passwordHash: string; role: string } | undefined;
+  try {
+    const rows = await db()<{ id: number; passwordHash: string; role: string }[]>`
+      select id, password_hash, role from users where email = ${email}`;
+    u = rows[0];
+    if (!u || !(await compare(password, u.passwordHash))) {
+      return { error: 'Неверная почта или пароль.', values: { email } };
+    }
+    await createSession(u.id);
+  } catch (err) {
+    console.error('[login] ошибка входа', err);
+    return { error: `Не удалось войти: ${err instanceof Error ? err.message : String(err)}`, values: { email } };
   }
-  await createSession(u.id);
   const home = u.role === 'curator' ? '/curator' : '/me';
   redirect(next && next.startsWith(home) ? next : home);
 }
