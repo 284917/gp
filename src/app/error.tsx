@@ -5,9 +5,24 @@ import Link from 'next/link';
 
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const noDb = /DATABASE_URL|База данных не подключена/.test(error.message);
+  // Страница открыта со старой версии сайта, а сайт уже обновился
+  const stale = /Server Action .* was not found|failed-to-find-server-action/i.test(error.message);
   useEffect(() => {
     console.error('[ошибка страницы]', error);
   }, [error]);
+
+  if (stale) {
+    return (
+      <div className="status-page">
+        <div className="status-box">
+          <h1 className="h1">Сайт обновился</h1>
+          <p className="lead">Пока страница была открыта, вышла новая версия сайта. Обновите страницу и повторите действие.</p>
+          <div className="row"><button className="btn primary" onClick={() => window.location.reload()}>Обновить страницу</button></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="status-page">
       <div className="status-box">
@@ -22,7 +37,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
             .filter(Boolean)
             .join('\n')}
         </pre>
-        <div className="row"><button className="btn primary" onClick={reset}>Попробовать снова</button><Link className="btn" href="/">На главную</Link></div>
+        <div className="row"><button className="btn primary" onClick={() => window.location.reload()}>Обновить страницу</button><button className="btn" onClick={reset}>Попробовать снова</button><Link className="btn" href="/">На главную</Link></div>
       </div>
     </div>
   );

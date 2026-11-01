@@ -143,16 +143,28 @@ export async function seedBase(sql) {
   }
 }
 
+// Почта из ADMIN_EMAIL — главный куратор. При каждой сборке аккаунт создаётся или приводится
+// к этому виду: роль куратора и пароль из ADMIN_PASSWORD. Так доступ всегда можно вернуть через Vercel.
 export async function seedAdmin(sql) {
   const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-  const password = process.env.ADMIN_PASSWORD || '';
-  if (!email || !password) return;
-  const exists = await sql`select id from users where email = ${email}`;
-  if (exists.length) return;
+  const password = (process.env.ADMIN_PASSWORD || '').trim();
+  if (!email && !password) return;
+  if (!email || !password) { console.warn('[seed] задайте и ADMIN_EMAIL, и ADMIN_PASSWORD'); return; }
   if (password.length < 8) { console.warn('[seed] ADMIN_PASSWORD короче 8 символов — куратор не создан'); return; }
-  await sql`insert into users (email, password_hash, name, role, curator_scope, status, approved_at)
-            values (${email}, ${await hash(password, 10)}, ${process.env.ADMIN_NAME || 'Куратор программы'}, 'curator', 'all', 'active', now())`;
-  console.log('[seed] создан куратор', email);
+  const passwordHash = await hash(password, 10);
+  const name = (process.env.ADMIN_NAME || '').trim();
+  const [existing] = await sql`select id, role from users where email = ${email}`;
+  if (existing) {
+    await sql`update users set password_hash = ${passwordHash}, role = 'curator', status = 'active',
+                curator_scope = coalesce(curator_scope, 'all'), approved_at = coalesce(approved_at, now()),
+                name = ${name || sql`name`}
+              where id = ${existing.id}`;
+    console.log(existing.role === 'curator' ? '[seed] куратор обновлён' : '[seed] аккаунт переведён в кураторы', email);
+  } else {
+    await sql`insert into users (email, password_hash, name, role, curator_scope, status, approved_at)
+              values (${email}, ${passwordHash}, ${name || 'Куратор программы'}, 'curator', 'all', 'active', now())`;
+    console.log('[seed] создан куратор', email);
+  }
 }
 
 /* ---------------- демо-данные ---------------- */
