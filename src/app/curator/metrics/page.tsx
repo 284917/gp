@@ -10,7 +10,7 @@ import { saveMetrics } from '@/app/actions/curator';
 
 export const metadata: Metadata = { title: 'Метрики' };
 
-type M = { month: string; reach: number; interactions: number; careerVisits: number; applications: number; hires: number; referralCandidates: number; referralHires: number; internshipApplications: number };
+type M = { month: string; reach: number; interactions: number; careerVisits: number; applications: number; hires: number; referralCandidates: number; referralHires: number; internshipApplications: number; isDemo: boolean };
 
 const FIELDS: [keyof M, string, string][] = [
   ['reach', 'Охват публикаций', 'Сумма охватов постов с #ГолосКомпании'],
@@ -28,7 +28,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const season = seasonInfo();
   const months = season.months.filter((m) => m.key <= season.currentKey);
-  const rows = await db()<M[]>`select month, reach, interactions, career_visits, applications, hires, referral_candidates, referral_hires, internship_applications
+  const rows = await db()<M[]>`select month, reach, interactions, career_visits, applications, hires, referral_candidates, referral_hires, internship_applications, is_demo
                                from metrics where month >= ${season.months[0].key} order by month`;
   const selected = months.find((m) => m.key === sp.month)?.key ?? months[Math.max(0, months.length - 2)]?.key ?? season.currentKey;
   const cur = rows.find((r) => r.month === selected);
@@ -39,15 +39,19 @@ export default async function MetricsPage({ searchParams }: { searchParams: Prom
       <PageHead title="Метрики" eyebrow="Внешние данные"
         sub="Охват, отклики и наймы живут в соцсетях и системе подбора. Раз в месяц внесите их сюда — обзор и цели сезона пересчитаются сами." />
       {sp.ok ? <Alert tone="good">Данные за {label(sp.ok)} сохранены.</Alert> : null}
+      {rows.some((r) => r.isDemo) ? (
+        <Alert tone="info"><b>Демонстрационные метрики.</b> Месяцы с пометкой «ДЕМО» заполнены модельными значениями для кейс-чемпионата, а не подтверждёнными данными компании.</Alert>
+      ) : null}
       <div className="grid-main">
         <section className="card" style={{ padding: 8 }}>
           <div className="tbl-wrap">
             <table className="tbl">
-              <thead><tr><th>Месяц</th><th>Охват</th><th>Реакции</th><th>Переходы</th><th>Отклики</th><th>Наймы</th><th>Рекомендации</th><th>Практика</th></tr></thead>
+              <thead><tr><th>Месяц</th><th>Источник</th><th>Охват</th><th>Реакции</th><th>Переходы</th><th>Отклики</th><th>Наймы</th><th>Рекомендации</th><th>Практика</th></tr></thead>
               <tbody>
                 {rows.length ? rows.map((r) => (
                   <tr key={r.month}>
                     <td className="nowrap"><Link className="rowlink" href={`/curator/metrics?month=${r.month}`}>{label(r.month)}</Link></td>
+                    <td>{r.isDemo ? <span className="chip brand">ДЕМО</span> : <span className="fine">Фактические</span>}</td>
                     <td className="n">{fmtNum(r.reach)}</td>
                     <td className="n">{fmtNum(r.interactions)}</td>
                     <td className="n">{fmtNum(r.careerVisits)}</td>
@@ -56,7 +60,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: Prom
                     <td className="n">{r.referralCandidates} / {r.referralHires}</td>
                     <td className="n">{r.internshipApplications}</td>
                   </tr>
-                )) : <tr><td colSpan={8} className="sub">Данных за сезон пока нет.</td></tr>}
+                )) : <tr><td colSpan={9} className="sub">Данных за сезон пока нет.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -76,6 +80,9 @@ export default async function MetricsPage({ searchParams }: { searchParams: Prom
               <span className="fhint">{h}</span>
             </div>
           ))}
+          {cur?.isDemo ? (
+            <Alert tone="warn">Вы редактируете модельные значения. После ручного сохранения месяц будет обозначен как фактический. Вводите здесь только подтверждённые данные.</Alert>
+          ) : null}
           <div><SubmitButton>Сохранить</SubmitButton></div>
         </form>
       </div>

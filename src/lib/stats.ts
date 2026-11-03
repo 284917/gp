@@ -46,11 +46,12 @@ export async function getProgramStats() {
     select count(*) filter (where reviewer_role = 'captain')::int as captain, count(*) filter (where reviewer_role = 'curator')::int as curator
     from submissions where reviewed_at > now() - interval '30 days'`;
 
-  const [m] = await sql<{ reach: number; interactions: number; careerVisits: number; applications: number; hires: number; referralCandidates: number; referralHires: number; internshipApplications: number; months: number }[]>`
+  const [m] = await sql<{ reach: number; interactions: number; careerVisits: number; applications: number; hires: number; referralCandidates: number; referralHires: number; internshipApplications: number; months: number; demoMonths: number }[]>`
     select coalesce(sum(reach), 0)::int as reach, coalesce(sum(interactions), 0)::int as interactions, coalesce(sum(career_visits), 0)::int as career_visits,
       coalesce(sum(applications), 0)::int as applications, coalesce(sum(hires), 0)::int as hires,
       coalesce(sum(referral_candidates), 0)::int as referral_candidates, coalesce(sum(referral_hires), 0)::int as referral_hires,
-      coalesce(sum(internship_applications), 0)::int as internship_applications, count(*)::int as months
+      coalesce(sum(internship_applications), 0)::int as internship_applications, count(*)::int as months,
+      count(*) filter (where is_demo)::int as demo_months
     from metrics where month >= ${season.months[0].key} and month <= ${season.months[8].key}`;
 
   const [att] = await sql<{ moderation: number; flagged: number; applications: number; redemptions: number; sleeping: number; noCaptain: number }[]>`

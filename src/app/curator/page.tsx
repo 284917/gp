@@ -4,7 +4,7 @@ import { requireCurator } from '@/lib/auth';
 import { getProgramStats, METRIC_STATUS } from '@/lib/stats';
 import { SEGMENTS, TARGETS } from '@/lib/domain';
 import { fmtCompact, fmtNum, pct, plural } from '@/lib/format';
-import { PageHead } from '@/components/ui';
+import { Alert, PageHead } from '@/components/ui';
 import { LineChart } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import { CommunityRings } from '@/components/CommunityRings';
@@ -38,6 +38,10 @@ export default async function CuratorOverview() {
     <div className="stack" style={{ '--gap': '18px' } as React.CSSProperties}>
       <PageHead title="Обзор программы" eyebrow={`Сезон ${s.season.label} · ${s.season.current?.now ?? 'межсезонье'}`}
         sub={`Здравствуйте, ${c.name.split(' ')[0]}. Вот что происходит в программе сейчас.`} />
+
+      {s.m.demoMonths > 0 ? (
+        <Alert tone="info"><b>Демонстрация кейса.</b> Внешние метрики за {s.m.demoMonths} мес. содержат модельные значения, а не официальные результаты компании. Активность, задания и инициативы взяты из базы прототипа.</Alert>
+      ) : null}
 
       <div className="attention">
         <Link href="/curator/moderation" className={s.att.moderation ? '' : 'calm'}><b>{s.att.moderation}</b><span>на проверке{s.att.flagged ? `, из них ${s.att.flagged} для куратора` : ''}</span></Link>
