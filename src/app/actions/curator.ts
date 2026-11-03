@@ -199,7 +199,7 @@ export async function saveMetrics(fd: FormData) {
             ${v('referralCandidates')}, ${v('referralHires')}, ${v('internshipApplications')}, now())
     on conflict (month) do update set reach = excluded.reach, interactions = excluded.interactions, career_visits = excluded.career_visits,
       applications = excluded.applications, hires = excluded.hires, referral_candidates = excluded.referral_candidates,
-      referral_hires = excluded.referral_hires, internship_applications = excluded.internship_applications, updated_at = now()`;
+      referral_hires = excluded.referral_hires, internship_applications = excluded.internship_applications, is_demo = false, updated_at = now()`;
   refresh();
   redirect(`/curator/metrics?ok=${month}`);
 }

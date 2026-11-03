@@ -6,6 +6,7 @@ import { Icon, Mark, type IconName } from './Icon';
 
 const TABS: { href: string; label: string; icon: IconName }[] = [
   { href: '/me', label: 'Путь', icon: 'flag' },
+  { href: '/me/initiatives', label: 'Проекты', icon: 'rocket' },
   { href: '/me/tasks', label: 'Задания', icon: 'tasks' },
   { href: '/me/kit', label: 'Кит', icon: 'kit' },
   { href: '/me/rating', label: 'Рейтинг', icon: 'bars' },
@@ -13,7 +14,9 @@ const TABS: { href: string; label: string; icon: IconName }[] = [
 ];
 
 function isActive(path: string, href: string) {
-  return href === '/me' ? path === '/me' : path.startsWith(href);
+  if (href === '/me') return path === '/me';
+  if (href === '/me/initiatives') return path.startsWith(href) || path.startsWith('/me/formats');
+  return path.startsWith(href);
 }
 
 export function AmbNav({ initials, unread, isCaptain, reviewCount }: { initials: string; unread: number; isCaptain: boolean; reviewCount: number }) {

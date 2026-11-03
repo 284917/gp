@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { requireAmbassador } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { SEGMENTS, WEEK_GOAL, groupOf, levelProgress, type Kind } from '@/lib/domain';
-import { timeAgo } from '@/lib/format';
+import { plural, timeAgo } from '@/lib/format';
+import { listInitiatives } from '@/lib/initiatives';
+import { FormatIcon, InitiativeChip } from '@/components/Initiative';
 import { Avatar, KindIcon, LevelCard, SeasonStrip } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 
@@ -37,6 +39,12 @@ export default async function MePage() {
 
   const notes = await sql<{ id: number; text: string; href: string | null; read: boolean; createdAt: Date }[]>`
     select id, text, href, read, created_at from notifications where user_id = ${u.id} order by created_at desc limit 3`;
+
+  const mine = (await listInitiatives({ statuses: ['idea', 'recruiting', 'active', 'reporting'], memberId: u.id, limit: 3 }));
+  const [{ calling }] = await sql<{ calling: number }[]>`
+    select count(*)::int as calling from initiatives i
+    where i.status = 'recruiting' and ${u.segment} = any(i.looking_for)
+      and not exists (select 1 from initiative_members m where m.initiative_id = i.id and m.user_id = ${u.id})`;
 
   const { lv, nx } = levelProgress(u.points);
   const filled = Math.min(WEEK_GOAL, week.done + week.pending);
@@ -87,6 +95,35 @@ export default async function MePage() {
         </div>
 
         <div className="stack">
+          <section className="card ini-card" data-reveal>
+            <div className="between">
+              <p className="label">Мои инициативы</p>
+              <Link className="link" href="/me/initiatives" style={{ fontSize: 13 }}>Биржа</Link>
+            </div>
+            {mine.length ? (
+              <ul className="list">
+                {mine.map((i) => (
+                  <li key={i.id}>
+                    <Link href={`/me/initiatives/${i.id}`} className="ini-row">
+                      <FormatIcon format={i.format} size="sm" />
+                      <span className="min0 grow"><b>{i.title}</b><br /><span className="fine">{i.authorId === u.id ? 'вы автор' : `автор ${i.authorName.split(' ')[0]}`} · {i.team.length} в команде</span></span>
+                      <InitiativeChip status={i.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="sub">Предложите свой проект или присоединитесь к команде: сотрудники и студенты делают его вместе.</p>}
+            {calling ? (
+              <Link href="/me/initiatives?view=me" className="calling">
+                <i className="live" aria-hidden="true" />
+                <span className="grow"><b>{calling}</b> {plural(calling, 'команда ищет', 'команды ищут', 'команд ищут')} {u.segment ? SEGMENTS[u.segment].label.toLowerCase() : 'участников'}</span>
+                <Icon name="arrow" size={16} />
+              </Link>
+            ) : (
+              <Link href="/me/initiatives/new" className="btn small"><Icon name="idea" size={16} /> Предложить инициативу</Link>
+            )}
+          </section>
+
           <section className="card">
             <div className="between">
               <p className="label">Мой тандем</p>

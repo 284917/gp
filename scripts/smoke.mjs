@@ -209,7 +209,107 @@ await step('студент и тандем', async () => {
   await p.context().close();
 });
 
-// 7. Телефон и тёмная тема
+// 7. Инициатива снизу: идея студента → согласование → команда со смены → итоги → баллы → повтор
+const INI = `Голос профессии: смена оператора ${stamp % 1000}`;
+let iniUrl = '';
+await step('студент предлагает инициативу', async () => {
+  const p = await page();
+  await loginAs(p, SEMYON);
+  await p.goto(`${BASE}/me/initiatives`);
+  await shot(p, '80-initiatives-empty');
+  await p.goto(`${BASE}/me/initiatives/new`);
+  await p.locator('button.tpl', { hasText: 'Голос профессии' }).click();
+  await p.fill('#i-title', INI);
+  await p.fill('#i-aud', 'Студенты 2 курса нефтяного техникума');
+  await shot(p, '81-initiative-new');
+  await Promise.all([p.waitForURL(/\/me\/initiatives\/\d+\?created=1/), p.click('button[type="submit"]:has-text("Отправить на согласование")')]);
+  iniUrl = p.url().split('?')[0];
+  await p.getByText('Идея у куратора').waitFor();
+  await p.context().close();
+});
+
+await step('куратор согласует идею', async () => {
+  const p = await page();
+  await loginAs(p, ADMIN);
+  await p.goto(`${BASE}/curator/initiatives`);
+  const card = p.locator('article.mod', { hasText: INI });
+  await card.waitFor();
+  await shot(p, '82-curator-initiatives');
+  await card.getByRole('button', { name: 'Согласовать' }).click();
+  await card.waitFor({ state: 'detached', timeout: 15000 });
+  await p.context().close();
+});
+
+await step('сотрудник АЗС откликается', async () => {
+  const p = await page();
+  await loginAs(p, ANNA);
+  await p.goto(`${BASE}/me/initiatives`);
+  await shot(p, '83-initiatives-board');
+  await p.locator('a.itile', { hasText: INI }).click();
+  await p.waitForURL(/\/me\/initiatives\/\d+$/);
+  await p.fill('#j-note', 'Работаю оператором пять лет, могу рассказать про смену и показать АЗС.');
+  await p.click('button[type="submit"]:has-text("Хочу в команду")');
+  await p.getByText('Отклик отправлен').waitFor();
+  await p.context().close();
+});
+
+await step('автор собирает команду и сдаёт итоги', async () => {
+  const p = await page();
+  await loginAs(p, SEMYON);
+  await p.goto(iniUrl);
+  const req = p.locator('li.request', { hasText: ANNA.name });
+  await req.getByRole('button', { name: 'Принять' }).click();
+  await req.waitFor({ state: 'detached', timeout: 15000 });
+  await p.click('button[type="submit"]:has-text("Команда собрана, начинаем")');
+  await p.locator('#r-res').waitFor();
+  await p.fill('#r-res', 'Сняли три ролика по 60 секунд со сменой АЗС, показали на классном часе в техникуме. Пришли 34 студента, задали больше 20 вопросов.');
+  await p.fill('#r-play', '1. Договориться с руководителем АЗС о времени съёмки\n2. Собрать вопросы у студентов заранее\n3. Снимать в разрешённой зоне, 3 сюжета по минуте\n4. Показать ролики на классном часе');
+  await p.fill('#r-aud', '34');
+  await p.fill('#r-reach', '2140');
+  await p.fill('#r-score', '4,7');
+  await p.click('button[type="submit"]:has-text("Отправить итоги куратору")');
+  await p.getByText('Итоги у куратора').waitFor();
+  await p.context().close();
+});
+
+await step('куратор принимает итоги, команда получает баллы', async () => {
+  const p = await page();
+  await loginAs(p, ADMIN);
+  await p.goto(`${BASE}/curator/initiatives`);
+  const card = p.locator('article.mod', { hasText: INI });
+  await card.getByRole('button', { name: 'Принять и начислить баллы' }).click();
+  await card.waitFor({ state: 'detached', timeout: 15000 });
+  await p.goto(`${BASE}/curator`);
+  await shot(p, '84-curator-community');
+  await p.goto(iniUrl.replace('/me/', '/curator/'));
+  await shot(p, '85-curator-initiative');
+  await p.context().close();
+
+  const s = await page();
+  await loginAs(s, SEMYON);
+  await s.goto(iniUrl);
+  await s.getByText('Проект завершён').waitFor();
+  await shot(s, '86-initiative-done');
+  await s.goto(`${BASE}/me/rewards`);
+  await s.getByText('Путь к приоритету на практику').waitFor();
+  await shot(s, '87-student-status');
+  await s.context().close();
+});
+
+await step('формат повторяют из библиотеки', async () => {
+  const p = await page();
+  await loginAs(p, BORIS);
+  await p.goto(`${BASE}/me/formats`);
+  await shot(p, '88-formats');
+  await p.locator('a.itile', { hasText: INI }).click();
+  await p.getByRole('link', { name: 'Повторить в моём регионе' }).click();
+  await p.waitForURL(/\/me\/initiatives\/new\?from=\d+/);
+  await Promise.all([p.waitForURL(/\/me\/initiatives\/\d+\?created=1/), p.click('button[type="submit"]:has-text("Отправить на согласование")')]);
+  await p.getByText(/формат из города/).waitFor();
+  await p.context().close();
+});
+
+// 8. Телефон и тёмная тема
 await step('мобильная версия', async () => {
   const p = await page(MOBILE);
   for (const [path, name] of [['/', '60-m-landing'], ['/login', '60-m-login'], ['/join', '60-m-join']]) {
@@ -218,18 +318,23 @@ await step('мобильная версия', async () => {
     await shot(p, name);
   }
   await loginAs(p, ANNA);
-  for (const [path, name] of [['', '61-m-home'], ['/tasks', '62-m-tasks'], ['/kit', '63-m-kit'], ['/rewards', '64-m-rewards'], ['/rating', '65-m-rating'], ['/profile', '66-m-profile'], ['/notifications', '67-m-notifications']]) {
+  for (const [path, name] of [['', '61-m-home'], ['/tasks', '62-m-tasks'], ['/kit', '63-m-kit'], ['/rewards', '64-m-rewards'], ['/rating', '65-m-rating'], ['/profile', '66-m-profile'], ['/notifications', '67-m-notifications'], ['/initiatives', '69-m-initiatives'], ['/formats', '69-m-formats'], ['/initiatives/new', '69-m-initiative-new']]) {
     await p.goto(`${BASE}/me${path}`);
     await noOverflow(p, 'телефон');
     await shot(p, name);
   }
   await p.goto(taskUrl);
   await noOverflow(p, 'телефон');
+  if (iniUrl) {
+    await p.goto(iniUrl);
+    await noOverflow(p, 'телефон, инициатива');
+    await shot(p, '69-m-initiative');
+  }
   await p.context().close();
   const c = await page(MOBILE);
   await loginAs(c, ADMIN);
   await shot(c, '68-m-curator');
-  for (const path of ['', '/moderation', '/applications', '/ambassadors', '/tasks', '/tasks/new', '/rewards', '/regions', '/metrics', '/account']) {
+  for (const path of ['', '/moderation', '/applications', '/ambassadors', '/tasks', '/tasks/new', '/rewards', '/regions', '/metrics', '/account', '/initiatives']) {
     await c.goto(`${BASE}/curator${path}`);
     await noOverflow(c, 'телефон, куратор');
   }

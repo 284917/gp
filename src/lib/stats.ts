@@ -1,6 +1,7 @@
 import { db } from './db';
 import { TARGETS, seasonInfo, type Segment } from './domain';
 import { fmtCompact, fmtDateShort, pct } from './format';
+import { getCommunityStats } from './initiatives';
 
 export type MetricRow = { name: string; now: string; target: string; status: 'ok' | 'plan' | 'low' | 'later' };
 
@@ -45,11 +46,12 @@ export async function getProgramStats() {
     select count(*) filter (where reviewer_role = 'captain')::int as captain, count(*) filter (where reviewer_role = 'curator')::int as curator
     from submissions where reviewed_at > now() - interval '30 days'`;
 
-  const [m] = await sql<{ reach: number; interactions: number; careerVisits: number; applications: number; hires: number; referralCandidates: number; referralHires: number; internshipApplications: number; months: number }[]>`
+  const [m] = await sql<{ reach: number; interactions: number; careerVisits: number; applications: number; hires: number; referralCandidates: number; referralHires: number; internshipApplications: number; months: number; demoMonths: number }[]>`
     select coalesce(sum(reach), 0)::int as reach, coalesce(sum(interactions), 0)::int as interactions, coalesce(sum(career_visits), 0)::int as career_visits,
       coalesce(sum(applications), 0)::int as applications, coalesce(sum(hires), 0)::int as hires,
       coalesce(sum(referral_candidates), 0)::int as referral_candidates, coalesce(sum(referral_hires), 0)::int as referral_hires,
-      coalesce(sum(internship_applications), 0)::int as internship_applications, count(*)::int as months
+      coalesce(sum(internship_applications), 0)::int as internship_applications, count(*)::int as months,
+      count(*) filter (where is_demo)::int as demo_months
     from metrics where month >= ${season.months[0].key} and month <= ${season.months[8].key}`;
 
   const [att] = await sql<{ moderation: number; flagged: number; applications: number; redemptions: number; sleeping: number; noCaptain: number }[]>`
@@ -70,7 +72,15 @@ export async function getProgramStats() {
   const siteShare = pct(content.site, content.approved);
   const fmt1 = (n: number) => n.toFixed(1).replace('.', ',');
 
+  const cm = await getCommunityStats();
+  const share = (v: number, t: number, base: number): MetricRow['status'] => (base ? (v >= t ? 'ok' : 'low') : 'later');
   const metrics: { group: string; rows: MetricRow[] }[] = [
+    { group: 'Самостоятельность сообщества', rows: [
+      { name: 'Индекс инициативности: довели свой проект до конца', now: `${cm.index}%`, target: `≥ ${TARGETS.initiativeIndex}%`, status: share(cm.index, TARGETS.initiativeIndex, cm.done) },
+      { name: 'Смешанные команды среди завершённых проектов', now: cm.done ? `${cm.mixedShare}%` : '—', target: `≥ ${TARGETS.mixedTeams}%`, status: share(cm.mixedShare, TARGETS.mixedTeams, cm.done) },
+      { name: 'Форматы, повторённые в другом регионе', now: cm.done ? `${cm.replicatedShare}%` : '—', target: `≥ ${TARGETS.replicated}%`, status: share(cm.replicatedShare, TARGETS.replicated, cm.done) },
+      { name: 'Удержание участников со стажем 60+ дней', now: cm.base ? `${cm.retention}%` : '—', target: `≥ ${TARGETS.retention}%`, status: share(cm.retention, TARGETS.retention, cm.base) },
+    ] },
     { group: 'Вовлечённость амбассадоров', rows: [
       { name: 'Доля активных за 14 дней', now: `${activeShare}%`, target: `≥ ${TARGETS.activeShare}%`, status: activeShare >= TARGETS.activeShare ? 'ok' : 'low' },
       { name: 'Принятых заданий на амбассадора за 30 дней', now: fmt1(perMonth), target: String(TARGETS.tasksPerMonth), status: perMonth >= TARGETS.tasksPerMonth ? 'ok' : 'low' },
@@ -100,6 +110,7 @@ export async function getProgramStats() {
     m,
     att,
     metrics,
+    community: cm,
   };
 }
 

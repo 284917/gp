@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
         <Wave width={220} height={100} className="hide-sm" />
       </aside>
-      <main className="auth-main">
+      <main id="main" className="auth-main">
         <div className="auth-box">
           <div className="stack" style={{ '--gap': '6px' } as React.CSSProperties}>
             <p className="eyebrow">Вход в кабинет</p>

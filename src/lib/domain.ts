@@ -84,7 +84,7 @@ export function seasonInfo(now = new Date()) {
 }
 
 export const WEEK_GOAL = 3;
-export const REWARD_CATEGORIES = ['Признание', 'Развитие', 'Карьера', 'Мерч', 'Бонусы'] as const;
+export const REWARD_CATEGORIES = ['Признание', 'Развитие', 'Карьера', 'Мерч'] as const;
 export const AUDIENCE_LABEL: Record<'all' | Group, string> = { all: 'Все', internal: 'Сотрудники', external: 'Студенты' };
 
 /** Цели сезона для метрик программы. */
@@ -97,6 +97,99 @@ export const TARGETS = {
   referralCandidates: 120,
   referralHires: 40,
   internshipApplications: 150,
+  initiativeIndex: 30,
+  mixedTeams: 50,
+  replicated: 25,
+  retention: 75,
 };
+
+/* ---------- инициативы ---------- */
+export type InitiativeFormat = 'interview' | 'event' | 'excursion' | 'content' | 'masterclass' | 'challenge';
+export type InitiativeStatus = 'idea' | 'recruiting' | 'active' | 'reporting' | 'done' | 'declined';
+export type MemberStatus = 'requested' | 'accepted' | 'declined';
+
+export const FORMATS: Record<InitiativeFormat, { label: string; icon: 'video' | 'users' | 'map' | 'pen' | 'star' | 'repeat' }> = {
+  interview: { label: 'Видеоинтервью', icon: 'video' },
+  event: { label: 'Встреча', icon: 'users' },
+  excursion: { label: 'Экскурсия', icon: 'map' },
+  content: { label: 'Серия публикаций', icon: 'pen' },
+  masterclass: { label: 'Мастер-класс', icon: 'star' },
+  challenge: { label: 'Региональный вызов', icon: 'repeat' },
+};
+export const FORMAT_KEYS = Object.keys(FORMATS) as InitiativeFormat[];
+
+/** Четыре шага, которые видит участник. «Итоги на проверке» — часть шага «в работе». */
+export const INITIATIVE_STEPS = [
+  { key: 'idea', label: 'Идея' },
+  { key: 'recruiting', label: 'Набор команды' },
+  { key: 'active', label: 'В работе' },
+  { key: 'done', label: 'Завершена' },
+] as const;
+export const stepIndex = (s: InitiativeStatus) =>
+  s === 'idea' || s === 'declined' ? 0 : s === 'recruiting' ? 1 : s === 'active' || s === 'reporting' ? 2 : 3;
+
+export const INITIATIVE_STATUS: Record<InitiativeStatus, { label: string; tone: '' | 'brand' | 'accent' | 'good' | 'warn' | 'bad' }> = {
+  idea: { label: 'На согласовании', tone: 'warn' },
+  recruiting: { label: 'Набор команды', tone: 'accent' },
+  active: { label: 'В работе', tone: 'brand' },
+  reporting: { label: 'Итоги на проверке', tone: 'warn' },
+  done: { label: 'Завершена', tone: 'good' },
+  declined: { label: 'Не согласована', tone: 'bad' },
+};
+
+/** Баллы начисляются, когда куратор принимает итоги. Главное — авторство и командная работа. */
+export const INITIATIVE_POINTS = {
+  author: 200,
+  member: 100,
+  mixed: 50,
+  replicated: 150,
+};
+
+/**
+ * Готовые совместные механики: с них удобно начать первую инициативу.
+ * Каждая собирает в одной команде сотрудников и студентов.
+ */
+export const JOINT_TEMPLATES: { key: string; title: string; format: InitiativeFormat; summary: string; goal: string; roles: string; lookingFor: Segment[] }[] = [
+  {
+    key: 'voice',
+    title: 'Голос профессии',
+    format: 'interview',
+    summary: 'Студент берёт интервью у сотрудника: как он пришёл в профессию, как устроен его день и что бы он посоветовал себе на первом курсе. Студент отвечает за вопросы, съёмку и монтаж, сотрудник делится опытом.',
+    goal: 'Три коротких ролика до 90 секунд для паблика вуза и корпоративного канала, сценарий для повторения в других городах.',
+    roles: 'Студент на вопросы и монтаж, сотрудник офиса или АЗС как герой интервью',
+    lookingFor: ['uni', 'college', 'site', 'office'],
+  },
+  {
+    key: 'three',
+    title: 'Один вопрос, три взгляда',
+    format: 'content',
+    summary: 'Офисный сотрудник, работник АЗС или нефтебазы и студент отвечают на один вопрос: например, что такое хорошая смена или как выглядит первый рабочий год. Три ответа складываются в одну публикацию.',
+    goal: 'Серия из четырёх публикаций в корпоративных каналах и на площадках вузов, отклики аудитории.',
+    roles: 'Сотрудник офиса, сотрудник АЗС или нефтебазы, студент на текст и оформление',
+    lookingFor: ['office', 'site', 'uni', 'college'],
+  },
+  {
+    key: 'challenge',
+    title: 'Региональный вызов',
+    format: 'challenge',
+    summary: 'Команда проводит формат у себя и бросает вызов соседнему региону: повторить его для своей аудитории и поделиться результатом. Готовый сценарий сохраняется в библиотеке.',
+    goal: 'Проведённое мероприятие, инструкция для повторения и хотя бы один регион, который принял вызов.',
+    roles: 'Организатор, ведущий, человек на съёмку и отчёт',
+    lookingFor: ['office', 'site', 'uni', 'college'],
+  },
+];
+
+/**
+ * Приоритет при отборе на практику — статус, а не товар за баллы.
+ * Студент заслуживает его вкладом: уровень «Эксперт» и участие в завершённой инициативе.
+ */
+export const PRIORITY_RULE = { minLevel: 3, initiatives: 1 };
+export function practicePriority(segment: Segment | null | undefined, points: number, doneInitiatives: number) {
+  const external = groupOf(segment) === 'external';
+  const lv = levelOf(points);
+  const levelOk = lv.n >= PRIORITY_RULE.minLevel;
+  const initiativeOk = doneInitiatives >= PRIORITY_RULE.initiatives;
+  return { applies: external, earned: external && levelOk && initiativeOk, levelOk, initiativeOk };
+}
 
 export const STATUS_LABEL: Record<UserStatus, string> = { pending: 'Заявка', active: 'Активен', paused: 'На паузе', rejected: 'Отклонён' };
