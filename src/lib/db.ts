@@ -15,7 +15,7 @@ export function db(): Sql {
       throw new Error('База данных не подключена: задайте переменную окружения DATABASE_URL (см. README).');
     }
     g.__golosSql = postgres(url, {
-      max: 5,
+      max: Number(process.env.DB_POOL_MAX) || 5,
       prepare: false,
       idle_timeout: 20,
       connect_timeout: 15,

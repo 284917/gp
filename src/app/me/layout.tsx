@@ -21,7 +21,7 @@ export default async function MeLayout({ children }: { children: React.ReactNode
   return (
     <>
       <AmbNav initials={initials(u.name)} unread={unread} isCaptain={u.isCaptain} reviewCount={reviewCount} />
-      <main className="amb-main container">{children}</main>
+      <main id="main" className="amb-main container">{children}</main>
     </>
   );
 }

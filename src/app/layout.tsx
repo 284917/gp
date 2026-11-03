@@ -5,6 +5,8 @@ import '@fontsource/golos-text/600.css';
 import '@fontsource/golos-text/700.css';
 import '@fontsource/roboto-condensed/700.css';
 import './globals.css';
+import './motion.css';
+import { Motion } from '@/components/Motion';
 
 export const metadata: Metadata = {
   title: { default: 'Голос компании — программа амбассадоров', template: '%s · Голос компании' },
@@ -21,8 +23,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru">
-      <body>{children}</body>
+    <html lang="ru" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
+      <body>
+        <a className="skip" href="#main">К содержанию</a>
+        {children}
+        <Motion />
+      </body>
     </html>
   );
 }

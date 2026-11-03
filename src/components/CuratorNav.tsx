@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon, type IconName } from './Icon';
 
-export function CuratorNav({ counts }: { counts: { moderation: number; applications: number; redemptions: number } }) {
+export function CuratorNav({ counts }: { counts: { moderation: number; applications: number; redemptions: number; initiatives: number } }) {
   const path = usePathname();
   const items: { href: string; label: string; icon: IconName; badge?: number }[] = [
     { href: '/curator', label: 'Обзор', icon: 'chart' },
+    { href: '/curator/initiatives', label: 'Инициативы', icon: 'rocket', badge: counts.initiatives },
     { href: '/curator/moderation', label: 'Модерация', icon: 'shield', badge: counts.moderation },
     { href: '/curator/applications', label: 'Заявки', icon: 'inbox', badge: counts.applications },
     { href: '/curator/ambassadors', label: 'Амбассадоры', icon: 'users' },

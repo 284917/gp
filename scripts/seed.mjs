@@ -94,12 +94,13 @@ export const REWARDS = [
   { title: 'День открытых дверей на объекте для вашей семьи', category: 'Признание', cost: 450, min_level: 2, audience: 'internal' },
   { title: 'Курс «Сторителлинг и выступления»', category: 'Развитие', cost: 350, min_level: 1, audience: 'all' },
   { title: 'Фотосессия для личного бренда', category: 'Развитие', cost: 500, min_level: 2, audience: 'all' },
-  { title: 'Приоритет при отборе на практику', category: 'Карьера', cost: 600, min_level: 2, audience: 'external' },
   { title: 'Рекомендательное письмо от компании', category: 'Карьера', cost: 300, min_level: 2, audience: 'external' },
   { title: 'Запись о вкладе в программу в карьерном профиле', category: 'Карьера', cost: 300, min_level: 2, audience: 'internal' },
   { title: 'Стикеры и значок программы', category: 'Мерч', cost: 150, min_level: 1, audience: 'all' },
   { title: 'Худи «Голос компании»', category: 'Мерч', cost: 400, min_level: 1, audience: 'all' },
-  { title: '1000 бонусов программы лояльности АЗС', category: 'Бонусы', cost: 250, min_level: 1, audience: 'all', note: 'нужно согласование' },
+  { title: 'Презентация вашей инициативы на форуме амбассадоров', category: 'Признание', cost: 700, min_level: 3, audience: 'all', note: 'для авторов завершённых инициатив' },
+  { title: 'Разбор вашего проекта с экспертом по коммуникациям', category: 'Развитие', cost: 400, min_level: 2, audience: 'all' },
+  { title: 'Встреча с командой подбора: как устроен отбор на практику', category: 'Карьера', cost: 350, min_level: 2, audience: 'external' },
 ];
 
 async function count(sql, table, where = sql``) {

@@ -6,12 +6,24 @@ import { SEGMENTS, TARGETS } from '@/lib/domain';
 import { fmtCompact, fmtNum, pct, plural } from '@/lib/format';
 import { PageHead } from '@/components/ui';
 import { LineChart } from '@/components/charts';
+import { Icon } from '@/components/Icon';
+import { CommunityRings } from '@/components/CommunityRings';
+import { RegionFlow, type FlowRegion } from '@/components/RegionFlow';
+import { db } from '@/lib/db';
 
 export const metadata: Metadata = { title: 'Обзор программы' };
 
 export default async function CuratorOverview() {
   const c = await requireCurator();
-  const s = await getProgramStats();
+  const [s, regions] = await Promise.all([getProgramStats(), db()<FlowRegion[]>`select id, city, lon, lat from regions order by sort`]);
+  const cm = s.community;
+  const pipeline: [string, number][] = [
+    ['идей на согласовании', cm.idea],
+    ['ищут команду', cm.recruiting],
+    ['в работе', cm.working + cm.reporting],
+    ['завершено', cm.done],
+    ['повторено в регионах', cm.replicas],
+  ];
   const reviews = s.load.captain + s.load.curator;
   const capShare = pct(s.load.captain, reviews);
   const funnel: [string, number][] = [
@@ -32,7 +44,29 @@ export default async function CuratorOverview() {
         <Link href="/curator/applications" className={s.att.applications ? '' : 'calm'}><b>{s.att.applications}</b><span>новых заявок в программу</span></Link>
         <Link href="/curator/rewards" className={s.att.redemptions ? '' : 'calm'}><b>{s.att.redemptions}</b><span>наград ждут выдачи</span></Link>
         <Link href="/curator/ambassadors?filter=sleeping" className={s.att.sleeping ? '' : 'calm'}><b>{s.att.sleeping}</b><span>амбассадоров молчат 14+ дней</span></Link>
+        <Link href="/curator/initiatives" className={cm.idea + cm.reporting ? '' : 'calm'}><b>{cm.idea + cm.reporting}</b><span>инициатив ждут решения</span></Link>
       </div>
+
+      <section className="community" data-reveal>
+        <div className="between">
+          <div className="stack" style={{ '--gap': '4px' } as React.CSSProperties}>
+            <p className="eyebrow on-dark">Главный показатель сезона</p>
+            <h2 className="h2">Сообщество запускает проекты само</h2>
+          </div>
+          <Link href="/curator/initiatives" className="btn ghost-light">Все инициативы <Icon name="arrow" size={16} /></Link>
+        </div>
+        <ol className="pipeline">
+          {pipeline.map(([label, n], i) => (
+            <li key={label} style={{ '--i': i } as React.CSSProperties}>
+              <b data-count={n}>{n}</b><span>{label}</span>
+            </li>
+          ))}
+        </ol>
+        <CommunityRings s={cm} />
+        <div className="chart-wrap">
+          <RegionFlow regions={regions} flows={cm.flows} label={`Повторы форматов между регионами: ${cm.flows.length}`} />
+        </div>
+      </section>
 
       <div className="kpis">
         <div className="kpi"><p className="label">Амбассадоров</p><p className="kpi-v">{s.total}</p><p className="kpi-s">{s.internal} сотрудников · {s.external} студентов</p></div>

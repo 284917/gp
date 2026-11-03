@@ -1,35 +1,83 @@
 import Link from 'next/link';
-import { Brand, LevelCard, SeasonStrip, KindIcon } from '@/components/ui';
-import { Icon } from '@/components/Icon';
+import { Brand, SeasonStrip } from '@/components/ui';
+import { Icon, type IconName } from '@/components/Icon';
+import { RegionFlow, type FlowRegion } from '@/components/RegionFlow';
 import { db } from '@/lib/db';
-import { LEVELS } from '@/lib/domain';
+import { INITIATIVE_POINTS, JOINT_TEMPLATES, LEVELS } from '@/lib/domain';
 import { fmtNum, plural } from '@/lib/format';
 
 export const revalidate = 300;
 
-async function stats() {
+async function load() {
   try {
-    const [row] = await db()<{ ambassadors: number; regions: number; stories: number }[]>`
-      select (select count(*)::int from users where role = 'ambassador' and status = 'active') as ambassadors,
-             (select count(distinct region_id)::int from users where role = 'ambassador' and status = 'active') as regions,
-             (select count(*)::int from submissions where status = 'approved') as stories`;
-    return row;
+    const sql = db();
+    const [[row], regions] = await Promise.all([
+      sql<{ ambassadors: number; regions: number; done: number; replicas: number }[]>`
+        select (select count(*)::int from users where role = 'ambassador' and status = 'active') as ambassadors,
+               (select count(distinct region_id)::int from users where role = 'ambassador' and status = 'active') as regions,
+               (select count(*)::int from initiatives where status = 'done') as done,
+               (select count(*)::int from initiatives where source_id is not null and status not in ('idea', 'declined')) as replicas`,
+      sql<FlowRegion[]>`select id, city, lon, lat from regions order by sort`,
+    ]);
+    return { stats: row, regions };
   } catch {
-    return null;
+    return { stats: null, regions: [] as FlowRegion[] };
   }
 }
 
+/** Иллюстрация: как форматы могут расходиться от одного города к соседним. */
+const SAMPLE_FLOWS = [
+  { fromId: 'nsk', toId: 'omsk' }, { fromId: 'nsk', toId: 'tomsk' }, { fromId: 'tomsk', toId: 'krsk' },
+  { fromId: 'ekb', toId: 'chel' }, { fromId: 'ekb', toId: 'tmn' }, { fromId: 'spb', toId: 'yar' }, { fromId: 'msk', toId: 'nnov' },
+];
+
 const FAQ = [
-  ['Сколько времени это занимает?', 'Большинство заданий — от 5 до 30 минут в неделю. Для сотрудников АЗС и нефтебаз есть форматы «с телефона за пять минут», в том числе голосовые. Мероприятия — по желанию.'],
-  ['Платят ли за участие?', 'Нет. Баллы за задания обмениваются на опыт и признание: встречи с руководителями, обучение, фотосессию, мерч, а студентам — приоритет при отборе на практику и стажировку.'],
-  ['Можно ли снимать на АЗС и нефтебазе?', 'Только в зонах, которые согласовал руководитель объекта. В контент-ките есть памятка «можно / нельзя», а задания со съёмкой на объектах дополнительно проверяет куратор.'],
-  ['Мне нет 18 лет, я студент колледжа. Можно?', 'Да. Для съёмок и выездов понадобится согласие родителей — куратор пришлёт форму после одобрения заявки.'],
-  ['Кто проверяет задания?', 'Капитан вашего региона — опытный амбассадор уровня «Лидер». Спорные случаи, съёмку на объектах и внешние публикации смотрят кураторы программы.'],
+  ['Сколько времени это занимает?', 'Задания недели занимают от 5 до 30 минут. Для сотрудников АЗС и нефтебаз есть форматы «с телефона за пять минут», в том числе голосовые. Инициативы — по желанию: вы сами выбираете проект и роль в команде.'],
+  ['Что такое биржа инициатив?', 'Место, где амбассадоры предлагают свои проекты: интервью, экскурсии, встречи, серии публикаций. Автор описывает идею и кого ищет, куратор согласует, а сотрудники и студенты откликаются и собирают команду.'],
+  ['Платят ли за участие?', 'Нет, и бонусов за участие тоже нет. Баллы за задания и проекты открывают опыт и признание: встречи с руководителями, обучение, выступление на форуме, мерч программы.'],
+  ['Как студенту получить приоритет на практику?', 'Приоритет не покупается за баллы. Его получают студенты уровня «Эксперт», которые довели до результата хотя бы одну инициативу: автором или в команде.'],
+  ['Можно ли снимать на АЗС и нефтебазе?', 'Только в зонах, которые согласовал руководитель объекта. Проекты на объектах согласует куратор, а в контент-ките есть памятка «можно / нельзя».'],
+  ['Мне нет 18 лет, я студент колледжа. Можно?', 'Да. Для съёмок и выездов понадобится согласие родителей: куратор пришлёт форму после одобрения заявки.'],
+  ['Кто проверяет работу?', 'Задания недели проверяет капитан региона. Идеи инициатив, публикации и итоги проектов смотрят кураторы программы.'],
   ['Когда набор?', 'Сезон идёт с сентября по май. Заявки принимаются круглый год, основной набор — в сентябре.'],
 ];
 
+const JOURNEY: { icon: IconName; title: string; text: string }[] = [
+  { icon: 'idea', title: 'Идея', text: 'Амбассадор описывает проект на один абзац: что, для кого и зачем' },
+  { icon: 'users', title: 'Команда', text: 'Сотрудники и студенты откликаются, автор собирает смешанную команду' },
+  { icon: 'rocket', title: 'Проект', text: 'Команда проводит встречу, снимает интервью или запускает серию постов' },
+  { icon: 'library', title: 'Формат', text: 'Итоги и инструкция попадают в библиотеку проверенных форматов' },
+  { icon: 'repeat', title: 'Другой регион', text: 'Команда из соседнего города повторяет формат для своей аудитории' },
+];
+
+const TAGLINE: [string, boolean][] = [
+  ['Компанию', false], ['лучше', false], ['всего', false], ['описывают', false], ['те,', false], ['кто', false], ['в', false], ['ней', false],
+  ['работает', true], ['и', false], ['учится.', true], ['Мы', false], ['даём', false], ['им', false], ['сцену,', false], ['команду', true], ['и', false], ['способ', false],
+  ['передать', false], ['удачную', false], ['идею', false], ['дальше.', true],
+];
+
+function MockTile({ title, city, format, chip, tone, team, need }: { title: string; city: string; format: string; chip: string; tone: string; team: [string, boolean][]; need?: string[] }) {
+  return (
+    <div className="itile">
+      <span className="itile-top">
+        <span className={`t-ic f-${format}`}><Icon name={format === 'interview' ? 'video' : format === 'excursion' ? 'map' : 'repeat'} /></span>
+        <span className="min0 grow"><span className="fine">{city}</span><span className="itile-title">{title}</span></span>
+        <span className={`chip ${tone}`}>{tone === 'accent' ? <i className="live" /> : null}{chip}</span>
+      </span>
+      {need ? <span className="who-need">{need.map((n) => <span key={n} className="chip brand">{n}</span>)}</span> : null}
+      <span className="itile-foot">
+        <span className="team">{team.map(([t, ext], i) => <span key={t} className={`avatar sm ${ext ? 'alt' : 'soft'}`} style={{ '--i': i } as React.CSSProperties}>{t}</span>)}</span>
+        <span className="fine">{team.length} в команде</span>
+      </span>
+    </div>
+  );
+}
+
 export default async function Landing() {
-  const s = await stats();
+  const { stats: s, regions } = await load();
+  const flows = SAMPLE_FLOWS.filter((f) => regions.some((r) => r.id === f.fromId) && regions.some((r) => r.id === f.toId));
+  const formats = [...JOINT_TEMPLATES.map((t) => t.title), 'Экскурсия на АЗС', 'Карьерный завтрак', 'Кадр смены', 'Голосовая история', 'Эксперт на час'];
+
   return (
     <>
       <header className="site-head">
@@ -37,6 +85,7 @@ export default async function Landing() {
           <Brand />
           <nav className="site-nav" aria-label="Разделы">
             <a href="#who">Кто такие амбассадоры</a>
+            <a href="#initiatives">Инициативы</a>
             <a href="#path">Путь</a>
             <a href="#perks">Награды</a>
             <a href="#faq">Вопросы</a>
@@ -48,89 +97,133 @@ export default async function Landing() {
         </div>
       </header>
 
-      <main>
+      <main id="main">
         <section className="hero">
           <div className="container hero-grid">
-            <div className="stack" style={{ '--gap': '22px' } as React.CSSProperties}>
-              <p className="eyebrow">Программа амбассадоров бренда работодателя</p>
-              <h1 className="display">Голос<br />компании</h1>
-              <p className="lead">
-                Сотрудники офисов, АЗС и нефтебаз вместе со студентами вузов и колледжей рассказывают, как на самом деле устроена работа в компании.
-                Короткие задания, рост по уровням и награды, которые не купишь.
+            <div className="stack" style={{ '--gap': '24px' } as React.CSSProperties}>
+              <p className="eyebrow rise">Программа амбассадоров бренда работодателя</p>
+              <h1 className="display"><span className="row-in">Голос</span><span className="row-in">компании</span></h1>
+              <p className="lead rise" style={{ '--i': 1 } as React.CSSProperties}>
+                Сотрудники офисов, АЗС и нефтебаз вместе со студентами сами придумывают проекты о работе в компании,
+                собирают общие команды и передают удачные форматы в другие регионы.
               </p>
-              <div className="row" style={{ '--gap': '12px' } as React.CSSProperties}>
+              <div className="row rise" style={{ '--gap': '12px', '--i': 2 } as React.CSSProperties}>
                 <Link className="btn primary large" href="/join">Подать заявку <Icon name="arrow" size={18} /></Link>
                 <Link className="btn large" href="/login">Войти в кабинет</Link>
               </div>
               {s && s.ambassadors > 0 ? (
-                <div className="hero-stats">
-                  <div><b>{fmtNum(s.ambassadors)}</b><span>{plural(s.ambassadors, 'амбассадор', 'амбассадора', 'амбассадоров')}</span></div>
-                  <div><b>{fmtNum(s.regions)}</b><span>{plural(s.regions, 'регион', 'региона', 'регионов')}</span></div>
-                  <div><b>{fmtNum(s.stories)}</b><span>{plural(s.stories, 'история принята', 'истории приняты', 'историй принято')}</span></div>
+                <div className="hero-stats rise" style={{ '--i': 3 } as React.CSSProperties}>
+                  <div><b data-count={s.ambassadors}>{fmtNum(s.ambassadors)}</b><span>{plural(s.ambassadors, 'амбассадор', 'амбассадора', 'амбассадоров')}</span></div>
+                  <div><b data-count={s.regions}>{fmtNum(s.regions)}</b><span>{plural(s.regions, 'регион', 'региона', 'регионов')}</span></div>
+                  {s.done ? <div><b data-count={s.done}>{fmtNum(s.done)}</b><span>{plural(s.done, 'проект завершён', 'проекта завершено', 'проектов завершено')}</span></div> : null}
                 </div>
               ) : null}
             </div>
-            <div className="hero-visual" aria-hidden="true">
-              <span className="chip good float"><Icon name="check" size={13} /> Принято капитаном · +60</span>
-              <div className="tilt"><LevelCard points={480} compact /></div>
-              <div className="task" style={{ boxShadow: 'var(--shadow-s)' }}>
-                <KindIcon kind="photo" />
-                <span className="task-body">
-                  <span className="task-title">Кадр смены</span>
-                  <span className="meta"><Icon name="clock" size={14} /> 5 мин · Фото</span>
-                </span>
-                <span className="pts">+40</span>
-              </div>
-              <div className="task" style={{ boxShadow: 'var(--shadow-s)' }}>
-                <KindIcon kind="event" />
-                <span className="task-body">
-                  <span className="task-title">Экскурсия на АЗС</span>
-                  <span className="meta"><Icon name="tandem" size={14} /> с тандемом · Встреча</span>
-                </span>
-                <span className="pts">+120</span>
-              </div>
+            <div className="stack-demo rise" style={{ '--i': 2 } as React.CSSProperties} aria-hidden="true">
+              <MockTile title="Голос профессии: первый год на АЗС" city="Видеоинтервью · Новосибирск" format="interview" chip="Набор команды" tone="accent" team={[['МК', false], ['ДС', true]]} need={['Студент колледжа', 'АЗС и нефтебаза']} />
+              <MockTile title="Экскурсия на нефтебазу для колледжа" city="Экскурсия · Омск" format="excursion" chip="В работе" tone="brand" team={[['ИП', false], ['АВ', true], ['ЕЛ', true]]} />
+              <MockTile title="Один вопрос, три взгляда" city="Региональный вызов · Томск" format="challenge" chip="Завершена" tone="good" team={[['ОН', false], ['РТ', false], ['КЗ', true], ['ЮМ', true]]} />
+              <span className="chip good demo-note"><Icon name="repeat" size={13} /> Формат повторили в Омске</span>
             </div>
           </div>
         </section>
 
+        <div className="marquee" aria-hidden="true">
+          <div className="marquee-track">
+            {[...formats, ...formats].map((f, i) => <span key={i}><Icon name="sparkle" size={20} />{f}</span>)}
+          </div>
+        </div>
+
         <section className="section alt" id="who">
           <div className="container">
-            <div className="section-head">
+            <div className="section-head" data-reveal>
               <p className="eyebrow">Кто такие амбассадоры</p>
               <h2 className="h1">Две команды, одна история</h2>
-              <p className="lead">Сотрудники показывают работу изнутри, студенты рассказывают о компании сверстникам. Вместе они работают в тандемах.</p>
+              <p className="lead">Сотрудники показывают работу изнутри, студенты рассказывают о компании сверстникам. Самое сильное получается, когда они делают проект вместе.</p>
             </div>
             <div className="who">
-              <article className="card">
+              <article className="card" data-reveal>
                 <div className="between"><h3 className="h2">Сотрудники</h3><span className="chip brand">внутренние амбассадоры</span></div>
                 <div className="who-tags"><span className="chip">Офисы</span><span className="chip">АЗС</span><span className="chip">Нефтебазы</span></div>
                 <ul className="ticks good">
                   <li><Icon name="check" size={18} /><span>Делятся историями о работе в каналах компании и на карьерных площадках</span></li>
                   <li><Icon name="check" size={18} /><span>Выступают экспертами на днях карьеры и встречах со студентами</span></li>
-                  <li><Icon name="check" size={18} /><span>Продвигают реферальную программу и становятся наставниками студентов</span></li>
+                  <li><Icon name="check" size={18} /><span>Запускают свои инициативы и становятся героями студенческих интервью</span></li>
                 </ul>
               </article>
-              <article className="card">
+              <article className="card" data-reveal style={{ '--i': 1 } as React.CSSProperties}>
                 <div className="between"><h3 className="h2">Студенты</h3><span className="chip accent">внешние амбассадоры</span></div>
                 <div className="who-tags"><span className="chip">Вузы</span><span className="chip">Колледжи</span></div>
                 <ul className="ticks good">
                   <li><Icon name="check" size={18} /><span>Организуют встречи, экскурсии на объекты и в офисы</span></li>
-                  <li><Icon name="check" size={18} /><span>Дежурят на ярмарках вакансий и ведут стенды о практике</span></li>
-                  <li><Icon name="check" size={18} /><span>Снимают короткие видео и рассказывают о стажировках однокурсникам</span></li>
+                  <li><Icon name="check" size={18} /><span>Снимают и монтируют ролики с сотрудниками, ведут стенды на ярмарках</span></li>
+                  <li><Icon name="check" size={18} /><span>Предлагают проекты для своих вузов и колледжей и собирают под них команды</span></li>
                 </ul>
               </article>
             </div>
           </div>
         </section>
 
-        <section className="section" id="path">
-          <div className="container stack" style={{ '--gap': '28px' } as React.CSSProperties}>
-            <div className="section-head" style={{ marginBottom: 0 }}>
+        <section className="section" id="initiatives">
+          <div className="container stack" style={{ '--gap': '48px' } as React.CSSProperties}>
+            <div className="section-head" style={{ marginBottom: 0 }} data-reveal>
+              <p className="eyebrow">Биржа инициатив</p>
+              <h2 className="h1">От идеи одного человека<br />до формата для всей страны</h2>
+              <p className="lead">Проекты придумывают сами амбассадоры. Куратор помогает и согласует, а удачный формат не теряется: его подхватывает следующий регион.</p>
+            </div>
+            <ol className="journey">
+              {JOURNEY.map((j, i) => (
+                <li key={j.title} data-reveal style={{ '--i': i } as React.CSSProperties}>
+                  <span className="j-ic"><Icon name={j.icon} size={24} /></span>
+                  <div><h3>{j.title}</h3><p>{j.text}</p></div>
+                </li>
+              ))}
+            </ol>
+            <ul className="points-strip" data-reveal>
+              <li><b>+{INITIATIVE_POINTS.author}</b><span>автору завершённого проекта</span></li>
+              <li><b>+{INITIATIVE_POINTS.member}</b><span>каждому в команде</span></li>
+              <li><b>+{INITIATIVE_POINTS.mixed}</b><span>если в команде сотрудники и студенты</span></li>
+              <li><b>+{INITIATIVE_POINTS.replicated}</b><span>автору, когда формат повторили</span></li>
+            </ul>
+          </div>
+        </section>
+
+        <section className="tagline">
+          <div className="container">
+            <p className="words" aria-label={TAGLINE.map(([w]) => w).join(' ')}>
+              {TAGLINE.map(([w, acc], i) => <span key={i} className={acc ? 'acc' : ''} aria-hidden="true">{w}{' '}</span>)}
+            </p>
+          </div>
+        </section>
+
+        {regions.length ? (
+          <section className="section" style={{ paddingTop: 0 }}>
+            <div className="container">
+              <div className="landing-flow" data-reveal>
+                <div className="grid-2" style={{ alignItems: 'end' }}>
+                  <div className="stack">
+                    <p className="eyebrow on-dark">Регионы</p>
+                    <h2 className="h1">Кураторы в Петербурге,<br />проекты по всей стране</h2>
+                  </div>
+                  <p className="lead">Четыре куратора не могут придумать проект для каждого города. Поэтому идеи рождаются в регионах, а библиотека форматов переносит лучшие из них дальше.</p>
+                </div>
+                <div className="chart-wrap">
+                  <RegionFlow regions={regions} flows={flows} label="Пример: формат из одного города повторяют в соседних регионах" />
+                </div>
+                <p className="fine" style={{ color: 'var(--on-deep-muted)' }}>Схема показывает принцип: дуги — повторы форматов между городами программы.</p>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="section alt" id="path">
+          <div className="container stack" style={{ '--gap': '32px' } as React.CSSProperties}>
+            <div className="section-head" style={{ marginBottom: 0 }} data-reveal>
               <p className="eyebrow">Путь амбассадора</p>
               <h2 className="h1">Четыре уровня за сезон</h2>
-              <p className="lead">Баллы за принятые задания поднимают уровень. Каждый уровень открывает новые возможности, а лидеры становятся капитанами регионов.</p>
+              <p className="lead">Баллы за задания и проекты поднимают уровень. Каждый уровень открывает новые возможности, а лидеры становятся капитанами регионов.</p>
             </div>
-            <div className="levels">
+            <div className="levels" data-reveal>
               {LEVELS.map((l) => (
                 <div key={l.n}>
                   <span className="lv-n">{l.n}</span>
@@ -142,77 +235,77 @@ export default async function Landing() {
                 </div>
               ))}
             </div>
-            <div className="card" style={{ padding: 22 }}>
+            <div className="card" style={{ padding: 24 }} data-reveal>
               <div className="between"><h3 className="h3">Сезон: сентябрь — май</h3><span className="fine">у каждого месяца своя тема</span></div>
               <SeasonStrip />
             </div>
           </div>
         </section>
 
-        <section className="section alt">
+        <section className="section">
           <div className="container">
-            <div className="section-head">
+            <div className="section-head" data-reveal>
               <p className="eyebrow">Как это работает</p>
-              <h2 className="h1">От заявки до признания</h2>
+              <h2 className="h1">От заявки до своего проекта</h2>
             </div>
             <ol className="how">
-              <li><h3>Заявка</h3><p className="sub">Расскажите о себе и выберите роль: офис, объект, вуз или колледж. Куратор ответит за пару дней.</p></li>
-              <li><h3>Старт и тандем</h3><p className="sub">Получите контент-кит, капитана региона и пару: сотрудник становится наставником студента.</p></li>
-              <li><h3>Задания недели</h3><p className="sub">Посты, фото, голосовые, встречи. Сдаёте в кабинете, капитан проверяет и начисляет баллы.</p></li>
-              <li><h3>Признание</h3><p className="sub">Уровни, кубок регионов и награды. Финал сезона — форум амбассадоров в апреле.</p></li>
+              <li data-reveal><h3>Заявка</h3><p className="sub">Расскажите о себе и выберите роль: офис, объект, вуз или колледж. Куратор ответит за пару дней.</p></li>
+              <li data-reveal style={{ '--i': 1 } as React.CSSProperties}><h3>Задания недели</h3><p className="sub">Короткие посты, фото, голосовые. Капитан региона проверяет и начисляет баллы.</p></li>
+              <li data-reveal style={{ '--i': 2 } as React.CSSProperties}><h3>Своя инициатива</h3><p className="sub">Предложите проект или присоединитесь к чужому. Команду из сотрудников и студентов собирает автор.</p></li>
+              <li data-reveal style={{ '--i': 3 } as React.CSSProperties}><h3>Признание</h3><p className="sub">Уровни, библиотека форматов с вашим именем и форум амбассадоров в апреле.</p></li>
             </ol>
           </div>
         </section>
 
-        <section className="section" id="perks">
+        <section className="section alt" id="perks">
           <div className="container">
-            <div className="section-head">
+            <div className="section-head" data-reveal>
               <p className="eyebrow">Что вы получаете</p>
               <h2 className="h1">Баллы меняются на опыт</h2>
-              <p className="lead">Оплаты за участие нет. Зато есть то, что сложно получить иначе.</p>
+              <p className="lead">Оплаты и бонусов за участие нет. Зато есть то, что сложно получить иначе.</p>
             </div>
             <div className="perks">
-              <article className="card"><Icon name="trophy" size={26} /><h3 className="h3">Признание</h3><ul><li>Завтрак с директором</li><li>Форум амбассадоров</li><li>Кубок регионов</li></ul></article>
-              <article className="card"><Icon name="bolt" size={26} /><h3 className="h3">Развитие</h3><ul><li>Сторителлинг и выступления</li><li>Работа с контентом</li><li>Фотосессия для личного бренда</li></ul></article>
-              <article className="card"><Icon name="star" size={26} /><h3 className="h3">Карьера</h3><ul><li>Приоритет на практику</li><li>Рекомендательное письмо</li><li>Запись в карьерном профиле</li></ul></article>
-              <article className="card"><Icon name="gift" size={26} /><h3 className="h3">Мерч и бонусы</h3><ul><li>Худи и значки программы</li><li>Бонусы на АЗС</li><li>Подарки к итогам сезона</li></ul></article>
+              <article className="card" data-reveal><Icon name="trophy" size={26} /><h3 className="h3">Признание</h3><ul><li>Авторство формата в библиотеке</li><li>Выступление на форуме амбассадоров</li><li>Кубок регионов</li></ul></article>
+              <article className="card" data-reveal style={{ '--i': 1 } as React.CSSProperties}><Icon name="bolt" size={26} /><h3 className="h3">Развитие</h3><ul><li>Сторителлинг и выступления</li><li>Управление проектом и командой</li><li>Разбор проекта с экспертом</li></ul></article>
+              <article className="card" data-reveal style={{ '--i': 2 } as React.CSSProperties}><Icon name="star" size={26} /><h3 className="h3">Карьера</h3><ul><li>Приоритет на практику за вклад в сезон</li><li>Рекомендательное письмо</li><li>Запись в карьерном профиле</li></ul></article>
+              <article className="card" data-reveal style={{ '--i': 3 } as React.CSSProperties}><Icon name="gift" size={26} /><h3 className="h3">Сообщество</h3><ul><li>Команды из разных городов</li><li>Встречи с руководителями</li><li>Мерч программы</li></ul></article>
             </div>
           </div>
         </section>
 
-        <section className="section alt">
+        <section className="section">
           <div className="container grid-2" style={{ alignItems: 'center', gap: 32 }}>
-            <div className="stack">
+            <div className="stack" data-reveal>
               <p className="eyebrow">Для кураторов</p>
               <h2 className="h1">Четыре куратора на всю страну</h2>
-              <p className="lead">Рутину берут на себя капитаны регионов, а кураторы видят всю программу на одном экране.</p>
+              <p className="lead">Проверку заданий берут капитаны регионов, проекты ведут сами авторы. Кураторы согласуют идеи и видят, растёт ли сообщество.</p>
             </div>
-            <ul className="ticks good" style={{ fontSize: 15 }}>
-              <li><Icon name="check" size={18} /><span>Заявки, модерация и выдача наград в одной очереди</span></li>
-              <li><Icon name="check" size={18} /><span>Метрики: вовлечённость, охват, кандидаты и наймы</span></li>
-              <li><Icon name="check" size={18} /><span>Карта регионов с часовыми поясами и капитанами</span></li>
-              <li><Icon name="check" size={18} /><span>Задания недели публикуются для нужной аудитории за минуту</span></li>
+            <ul className="ticks good" style={{ fontSize: 15 }} data-reveal>
+              <li><Icon name="check" size={18} /><span>Индекс инициативности: кто довёл свой проект до конца</span></li>
+              <li><Icon name="check" size={18} /><span>Доля смешанных команд из сотрудников и студентов</span></li>
+              <li><Icon name="check" size={18} /><span>Повторы форматов между регионами и удержание участников</span></li>
+              <li><Icon name="check" size={18} /><span>Заявки, модерация, охват и наймы в одном кабинете</span></li>
             </ul>
           </div>
         </section>
 
-        <section className="section" id="faq">
+        <section className="section alt" id="faq">
           <div className="container">
-            <div className="section-head">
+            <div className="section-head" data-reveal>
               <p className="eyebrow">Вопросы</p>
               <h2 className="h1">Коротко о важном</h2>
             </div>
             <div className="faq">
-              {FAQ.map(([q, a]) => (
-                <details key={q}><summary>{q}</summary><p>{a}</p></details>
+              {FAQ.map(([q, a], i) => (
+                <details key={q} data-reveal style={{ '--i': i % 4 } as React.CSSProperties}><summary>{q}</summary><p>{a}</p></details>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="section" style={{ paddingTop: 0 }}>
+        <section className="section">
           <div className="container">
-            <div className="cta-band">
+            <div className="cta-band" data-reveal>
               <h2 className="h1">Ваша история — лучший аргумент для будущих коллег</h2>
               <Link className="btn large" href="/join">Подать заявку <Icon name="arrow" size={18} /></Link>
             </div>
