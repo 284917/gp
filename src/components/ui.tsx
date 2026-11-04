@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Icon, Mark, Wave, type IconName } from './Icon';
-import { KINDS, LEVELS, MONTHS, levelProgress, seasonInfo, type Kind, type SubmissionStatus } from '@/lib/domain';
+import { KINDS, LEVELS, MONTHS, levelProgress, seasonInfo, type InitiativeTrack, type Kind, type SubmissionStatus } from '@/lib/domain';
 import { fmtNum, initials } from '@/lib/format';
 
 export function Brand({ href = '/' }: { href?: string }) {
@@ -65,8 +65,11 @@ export function PageHead({ title, sub, eyebrow, actions }: { title: string; sub?
   );
 }
 
-export function LevelCard({ points, compact = false }: { points: number; compact?: boolean }) {
-  const { lv, nx, pct, toNext } = levelProgress(points);
+export function LevelCard({ points, track, compact = false }: { points: number; track: InitiativeTrack; compact?: boolean }) {
+  const { lv, nx, pct, toNext, needText } = levelProgress(points, track);
+  const next = !nx ? 'Высший уровень сезона'
+    : toNext > 0 ? `Ещё ${fmtNum(toNext)} баллов${needText ? ` и ${needText}` : ''} до уровня «${nx.name}»`
+    : `Баллов хватает. Для уровня «${nx.name}» нужно ещё: ${needText}`;
   return (
     <section className="level" aria-label="Уровень">
       <Wave />
@@ -78,7 +81,7 @@ export function LevelCard({ points, compact = false }: { points: number; compact
       <div className="lvl-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Прогресс до следующего уровня">
         <span style={{ width: `${pct}%` }} />
       </div>
-      <p style={{ fontSize: 13.5 }}>{nx ? `Ещё ${fmtNum(toNext)} баллов до уровня «${nx.name}»` : 'Высший уровень сезона'}</p>
+      <p style={{ fontSize: 13.5 }}>{next}</p>
       {compact ? null : (
         <ol className="lvl-steps">
           {LEVELS.map((l) => (

@@ -8,7 +8,7 @@ import { Alert, PageHead } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { SubmitButton } from '@/components/SubmitButton';
 import { redeemReward } from '@/app/actions/me';
-import { PriorityCard } from '@/components/PriorityCard';
+import { CareerCard } from '@/components/CareerCard';
 
 export const metadata: Metadata = { title: 'Награды' };
 
@@ -20,7 +20,7 @@ export default async function RewardsPage({ searchParams }: { searchParams: Prom
   const u = await requireAmbassador();
   const sql = db();
   const group = groupOf(u.segment);
-  const lv = levelOf(u.points);
+  const lv = levelOf(u.points, u);
   const balance = u.points - u.spent;
   const cat = sp.cat && (REWARD_CATEGORIES as readonly string[]).includes(sp.cat) ? sp.cat : null;
   const rewards = await sql<Reward[]>`
@@ -30,10 +30,6 @@ export default async function RewardsPage({ searchParams }: { searchParams: Prom
   const mine = await sql<Req[]>`
     select d.id, w.title, d.cost, d.status, d.created_at from redemptions d join rewards w on w.id = d.reward_id
     where d.user_id = ${u.id} order by d.created_at desc limit 10`;
-  const [{ done, authored }] = await sql<{ done: number; authored: number }[]>`
-    select count(*)::int as done, count(*) filter (where i.author_id = ${u.id})::int as authored
-    from initiative_members m join initiatives i on i.id = m.initiative_id
-    where m.user_id = ${u.id} and m.status = 'accepted' and i.status = 'done'`;
   const requested = new Set((await sql<{ rewardId: number }[]>`select reward_id from redemptions where user_id = ${u.id} and status = 'requested'`).map((r) => r.rewardId));
 
   return (
@@ -50,7 +46,7 @@ export default async function RewardsPage({ searchParams }: { searchParams: Prom
           </div>
           <Link className="btn" href="/me/tasks">Заработать баллы <Icon name="arrow" size={16} /></Link>
         </section>
-        <PriorityCard segment={u.segment} points={u.points} done={done} authored={authored} />
+        <CareerCard segment={u.segment} level={lv.n} done={u.iniJoined} authored={u.iniAuthored} />
         <nav className="tabs" aria-label="Категории">
           <Link href="/me/rewards" aria-current={!cat ? 'page' : undefined}>Все</Link>
           {REWARD_CATEGORIES.map((c) => <Link key={c} href={`/me/rewards?cat=${encodeURIComponent(c)}`} aria-current={cat === c ? 'page' : undefined}>{c}</Link>)}
@@ -85,7 +81,7 @@ export default async function RewardsPage({ searchParams }: { searchParams: Prom
         </div>
         {!rewards.length ? <p className="sub">В этой категории для вашей роли наград нет.</p> : null}
         <p className="fine">{group === 'external'
-          ? 'Приоритет при отборе на практику не обменивается на баллы: его дают за вклад в сезон. Денежных и бонусных наград в программе нет.'
+          ? 'Участие в программе не даёт преимуществ при отборе на практику: он проходит на общих условиях. Денежных и бонусных наград в программе нет.'
           : 'Вклад в программу фиксируется в карьерном профиле сотрудника. Денежных и бонусных наград в программе нет.'}</p>
         {mine.length ? (
           <section className="card">

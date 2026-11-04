@@ -57,7 +57,7 @@ export async function redeemReward(fd: FormData) {
   const back = (m: string) => `/me/rewards?err=${encodeURIComponent(m)}`;
   if (!r || !r.active) redirect(back('Эта награда больше недоступна.'));
   if (r.audience !== 'all' && r.audience !== groupOf(u.segment)) redirect(back('Эта награда не для вашей роли.'));
-  if (levelOf(u.points).n < r.minLevel) redirect(back('Награда откроется на следующем уровне.'));
+  if (levelOf(u.points, u).n < r.minLevel) redirect(back('Награда откроется на следующем уровне.'));
   const dup = await sql`select id from redemptions where user_id = ${u.id} and reward_id = ${r.id} and status = 'requested'`;
   if (dup.length) redirect(back('Заявка на эту награду уже у куратора.'));
 

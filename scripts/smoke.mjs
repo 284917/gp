@@ -291,7 +291,8 @@ await step('куратор принимает итоги, команда пол�
   await s.getByText('Проект завершён').waitFor();
   await shot(s, '86-initiative-done');
   await s.goto(`${BASE}/me/rewards`);
-  await s.getByText('Путь к приоритету на практику').waitFor();
+  await s.getByRole('heading', { name: 'Карьерная поддержка' }).waitFor();
+  if (await s.getByText(/приоритет/i).count()) throw new Error('в наградах студента осталось обещание приоритета на практику');
   await shot(s, '87-student-status');
   await s.context().close();
 });

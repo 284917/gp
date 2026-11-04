@@ -101,6 +101,9 @@ export const REWARDS = [
   { title: 'Презентация вашей инициативы на форуме амбассадоров', category: 'Признание', cost: 700, min_level: 3, audience: 'all', note: 'для авторов завершённых инициатив' },
   { title: 'Разбор вашего проекта с экспертом по коммуникациям', category: 'Развитие', cost: 400, min_level: 2, audience: 'all' },
   { title: 'Встреча с командой подбора: как устроен отбор на практику', category: 'Карьера', cost: 350, min_level: 2, audience: 'external' },
+  { title: 'Карьерная консультация с HR: резюме и план развития', category: 'Карьера', cost: 300, min_level: 2, audience: 'all' },
+  { title: 'Встреча с экспертом вашей будущей профессии', category: 'Карьера', cost: 300, min_level: 2, audience: 'external' },
+  { title: 'Пробное собеседование перед отбором на практику', category: 'Карьера', cost: 400, min_level: 2, audience: 'external', note: 'отбор на общих условиях' },
 ];
 
 async function count(sql, table, where = sql``) {

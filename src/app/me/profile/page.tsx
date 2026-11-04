@@ -37,7 +37,7 @@ export default async function ProfilePage() {
             </div>
           </div>
           <div className="stat-row">
-            <div><span className="label">Уровень</span><b>{levelOf(u.points).name}</b></div>
+            <div><span className="label">Уровень</span><b>{levelOf(u.points, u).name}</b></div>
             <div><span className="label">Баллы сезона</span><b>{fmtNum(u.points)}</b></div>
             <div><span className="label">На счёте</span><b>{fmtNum(u.points - u.spent)}</b></div>
             <div><span className="label">Заданий принято</span><b>{stats.approved}</b></div>

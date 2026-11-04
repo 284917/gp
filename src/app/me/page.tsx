@@ -46,7 +46,7 @@ export default async function MePage() {
     where i.status = 'recruiting' and ${u.segment} = any(i.looking_for)
       and not exists (select 1 from initiative_members m where m.initiative_id = i.id and m.user_id = ${u.id})`;
 
-  const { lv, nx } = levelProgress(u.points);
+  const { lv, nx } = levelProgress(u.points, u);
   const filled = Math.min(WEEK_GOAL, week.done + week.pending);
   const tandemPeople = mentor ? [mentor] : students;
 
@@ -62,7 +62,7 @@ export default async function MePage() {
 
       <div className="grid-main">
         <div className="stack">
-          <LevelCard points={u.points} />
+          <LevelCard points={u.points} track={u} />
 
           <section className="card">
             <div className="between">

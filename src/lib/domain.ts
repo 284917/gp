@@ -17,20 +17,37 @@ export const groupOf = (s: Segment | null | undefined): Group => (s === 'uni' ||
 export const GROUP_LABEL: Record<Group, string> = { internal: 'Сотрудники', external: 'Студенты' };
 export const segmentsOf = (g: Group): Segment[] => (g === 'internal' ? ['office', 'site'] : ['uni', 'college']);
 
+/**
+ * Уровень складывается из баллов сезона и вклада в инициативы.
+ * «Эксперт» — 600 баллов и участие в завершённой инициативе (автором или в команде),
+ * «Лидер» — 1200 баллов и своя реализованная инициатива. Уровни идут по порядку.
+ */
 export const LEVELS = [
-  { n: 1, name: 'Старт', min: 0, unlocks: ['Онбординг и первые задания', 'Контент-кит и конструктор поста', 'Чат амбассадоров региона'] },
-  { n: 2, name: 'Голос', min: 200, unlocks: ['Все форматы заданий', 'Тандем с наставником или студентами', 'Витрина мерча и обучения'] },
-  { n: 3, name: 'Эксперт', min: 600, unlocks: ['Выступления на мероприятиях компании', 'Закрытые встречи с руководителями', 'Награды уровня «Эксперт»'] },
-  { n: 4, name: 'Лидер', min: 1200, unlocks: ['Можно стать капитаном региона', 'Прямой канал с кураторами', 'Поездка на форум амбассадоров'] },
+  { n: 1, name: 'Старт', min: 0, need: null, needText: null, unlocks: ['Онбординг и первые задания', 'Контент-кит и конструктор поста', 'Чат амбассадоров региона'] },
+  { n: 2, name: 'Голос', min: 200, need: null, needText: null, unlocks: ['Все форматы заданий', 'Тандем с наставником или студентами', 'Витрина мерча и обучения'] },
+  { n: 3, name: 'Эксперт', min: 600, need: 'joined', needText: 'участие в завершённой инициативе', unlocks: ['Выступления на мероприятиях компании', 'Закрытые встречи с руководителями', 'Награды уровня «Эксперт»'] },
+  { n: 4, name: 'Лидер', min: 1200, need: 'authored', needText: 'своя реализованная инициатива', unlocks: ['Можно стать капитаном региона', 'Прямой канал с кураторами', 'Поездка на форум амбассадоров'] },
 ] as const;
 export type Level = (typeof LEVELS)[number];
-export const levelOf = (points: number): Level => LEVELS.reduce<Level>((a, l) => (points >= l.min ? l : a), LEVELS[0]);
+/** Завершённые инициативы участника: всего (автором или в команде) и свои. */
+export type InitiativeTrack = { iniJoined: number; iniAuthored: number };
+export const meetsNeed = (l: Level, t: InitiativeTrack) =>
+  l.need === 'joined' ? t.iniJoined > 0 : l.need === 'authored' ? t.iniAuthored > 0 : true;
+export function levelOf(points: number, t: InitiativeTrack): Level {
+  let lv: Level = LEVELS[0];
+  for (const l of LEVELS) {
+    if (points < l.min || !meetsNeed(l, t)) break;
+    lv = l;
+  }
+  return lv;
+}
 export const nextLevel = (l: Level): Level | null => LEVELS.find((x) => x.n === l.n + 1) ?? null;
-export function levelProgress(points: number) {
-  const lv = levelOf(points);
+export function levelProgress(points: number, t: InitiativeTrack) {
+  const lv = levelOf(points, t);
   const nx = nextLevel(lv);
-  const pct = nx ? Math.round(((points - lv.min) / (nx.min - lv.min)) * 100) : 100;
-  return { lv, nx, pct, toNext: nx ? nx.min - points : 0 };
+  if (!nx) return { lv, nx, pct: 100, toNext: 0, needText: null };
+  const pct = Math.max(0, Math.min(100, Math.round(((points - lv.min) / (nx.min - lv.min)) * 100)));
+  return { lv, nx, pct, toNext: Math.max(0, nx.min - points), needText: meetsNeed(nx, t) ? null : nx.needText };
 }
 
 export const KINDS: Record<Kind, { label: string; icon: 'camera' | 'mic' | 'video' | 'pen' | 'users' | 'link' }> = {
@@ -178,18 +195,5 @@ export const JOINT_TEMPLATES: { key: string; title: string; format: InitiativeFo
     lookingFor: ['office', 'site', 'uni', 'college'],
   },
 ];
-
-/**
- * Приоритет при отборе на практику — статус, а не товар за баллы.
- * Студент заслуживает его вкладом: уровень «Эксперт» и участие в завершённой инициативе.
- */
-export const PRIORITY_RULE = { minLevel: 3, initiatives: 1 };
-export function practicePriority(segment: Segment | null | undefined, points: number, doneInitiatives: number) {
-  const external = groupOf(segment) === 'external';
-  const lv = levelOf(points);
-  const levelOk = lv.n >= PRIORITY_RULE.minLevel;
-  const initiativeOk = doneInitiatives >= PRIORITY_RULE.initiatives;
-  return { applies: external, earned: external && levelOk && initiativeOk, levelOk, initiativeOk };
-}
 
 export const STATUS_LABEL: Record<UserStatus, string> = { pending: 'Заявка', active: 'Активен', paused: 'На паузе', rejected: 'Отклонён' };

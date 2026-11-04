@@ -7,9 +7,7 @@
   --deep-2: #0b4583;
   --on-deep-muted: rgba(255, 255, 255, 0.72);
 }
-@media (prefers-color-scheme: dark) {
-  :root { --deep: #0b2a4d; --deep-2: #10365f; }
-}
+:root { --deep: #0b2a4d; --deep-2: #10365f; }
 
 .skip { position: absolute; left: 12px; top: -48px; z-index: 100; background: var(--fg); color: var(--bg); padding: 8px 12px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: transform 0.3s var(--ease); }
 .skip:focus { transform: translateY(60px); }
@@ -102,7 +100,7 @@
 .itile { transition-delay: 0s; }
 .itile.in { animation: rise 0.7s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); }
 .itile.in:hover { transform: translateY(-4px); }
-@media (prefers-color-scheme: dark) { .itile::after { background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.07) 48%, transparent 66%); } }
+.itile::after { background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.07) 48%, transparent 66%); }
 .itile-top { display: flex; gap: 12px; align-items: flex-start; }
 .itile-top .chip { flex: none; }
 .itile-title { display: block; font-weight: 600; font-size: 16px; line-height: 1.3; margin-top: 2px; color: var(--fg); }
@@ -348,8 +346,14 @@
 .landing-flow .flow-grid line { stroke: rgba(255, 255, 255, 0.12); }
 @media (max-width: 700px) { .landing-flow { padding: 20px; } }
 
-.hero .display { background: linear-gradient(90deg, var(--brand-ink), color-mix(in srgb, var(--brand-ink) 55%, var(--fg))); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero .display .row-in { display: block; animation: rise 0.9s var(--ease) both; }
+/* Градиент — на самих строках, а не на заголовке: мобильный Safari и Chrome не рисуют текст,
+   если background-clip: text стоит на родителе, а у дочерних строк своя анимация. */
+.hero .display .row-in { display: block; width: fit-content; max-width: 100%; color: var(--brand-ink); animation: rise 0.9s var(--ease) both; }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  @media (min-width: 961px) {
+    .hero .display .row-in { background: linear-gradient(90deg, var(--brand-ink), color-mix(in srgb, var(--brand-ink) 55%, var(--fg))); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  }
+}
 .hero .display .row-in + .row-in { animation-delay: 0.12s; }
 .hero .rise { animation: rise 0.9s var(--ease) both; animation-delay: calc(0.2s + var(--i, 0) * 0.08s); }
 @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
@@ -359,3 +363,59 @@
   .js .ring:not(.in) .ring-fill { stroke-dashoffset: calc(263.9px * (1 - var(--p))); }
   .marquee-track { animation: none; }
 }
+
+/* ---------- телефон: плотнее по вертикали ---------- */
+@media (max-width: 640px) {
+  .hero { padding-block: 24px 36px; }
+  .hero-grid { gap: 28px; }
+  .hero .display { font-size: clamp(46px, 14.5vw, 64px); }
+  .hero .lead { font-size: 16px; }
+  .hero-stats { gap: 20px; }
+  .hero-stats b { font-size: 30px; }
+  .stack-demo { display: none; }
+  .section { padding-block: 44px; }
+  .section-head { margin-bottom: 20px; }
+  .tagline { padding-block: 48px; }
+  .words { font-size: 28px; }
+  .marquee { padding-block: 12px; }
+  .marquee-track { gap: 32px; }
+  .marquee-track span { font-size: 18px; gap: 8px; }
+  .who .card { padding: 18px; }
+  .journey { gap: 16px; }
+  .journey .j-ic { width: 48px; height: 48px; border-radius: 14px; }
+  .journey li { grid-template-columns: 48px minmax(0, 1fr); }
+  .journey::before { left: 23px; }
+  .levels > div { padding: 16px; gap: 8px; }
+  .levels .lv-n { font-size: 34px; }
+  .perks { gap: 10px; }
+  .perks .card { padding: 16px; }
+  .how { gap: 20px; }
+  .faq details { padding: 14px 16px; }
+  .cta-band { padding: 24px; }
+}
+
+/* ---------- схема регионов: на телефоне — список маршрутов вместо карты ---------- */
+.flow-list { display: none; }
+@media (max-width: 640px) {
+  .flow-box > .flow { display: none; }
+  .flow-list { display: grid; gap: 8px; }
+}
+.flow-list li { display: grid; grid-template-columns: minmax(0, auto) 28px minmax(0, 1fr); align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
+.flow-list .fl-from { font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
+.flow-list .fl-from::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
+.flow-list .fl-arrow { height: 2px; background: var(--accent); position: relative; border-radius: 1px; }
+.flow-list .fl-arrow::after { content: ''; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--accent); border-right: 0; }
+.flow-list .fl-to { display: flex; flex-wrap: wrap; gap: 6px; }
+.flow-list .fl-to span { font-size: 14px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.flow-list li.fl-hub { display: block; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.flow-list .fl-hub b { color: var(--fg); }
+.landing-flow .flow-list li, .community .flow-list li { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.14); }
+.landing-flow .flow-list .fl-to span, .community .flow-list .fl-to span { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+.landing-flow .flow-list .fl-hub, .community .flow-list .fl-hub { color: var(--on-deep-muted); }
+.landing-flow .flow-list .fl-hub b, .community .flow-list .fl-hub b { color: #fff; }
+
+/* условие уровня и пометка о модельных данных */
+.levels .lv-need { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 12.5px; font-weight: 600; line-height: 1.35; color: var(--accent-ink); }
+.levels .lv-need .ic { margin-top: 1px; }
+.demo-flag { display: inline-flex; align-items: flex-start; gap: 6px; max-width: 52ch; }
+.demo-flag .ic { margin-top: 2px; color: var(--accent); }

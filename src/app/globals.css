@@ -35,32 +35,32 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #08111e;
-    --surface: #0f1b2d;
-    --surface-2: #15243a;
-    --line: #23354f;
-    --fg: #e3ebf5;
-    --muted: #8c9fb8;
-    --brand: #2a7dd0;
-    --brand-ink: #72b4f7;
-    --brand-deep: #0c3463;
-    --brand-soft: #132e4d;
-    --accent: #ff8240;
-    --accent-ink: #ffa06d;
-    --accent-soft: #3b2215;
-    --good: #3dbd82;
-    --good-soft: #0f3324;
-    --warn: #e5b03f;
-    --warn-soft: #382b0e;
-    --bad: #ff7363;
-    --bad-soft: #3d1a16;
-    --scrim: rgba(0, 0, 0, 0.55);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.4);
-    --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
-    color-scheme: dark;
-  }
+/* Единый фирменный стиль: тёмно-синяя палитра на всех устройствах, независимо от темы системы.
+   Значения выше остаются базой, этот блок их перекрывает. */
+:root {
+  --bg: #08111e;
+  --surface: #0f1b2d;
+  --surface-2: #15243a;
+  --line: #23354f;
+  --fg: #e3ebf5;
+  --muted: #8c9fb8;
+  --brand: #2a7dd0;
+  --brand-ink: #72b4f7;
+  --brand-deep: #0c3463;
+  --brand-soft: #132e4d;
+  --accent: #ff8240;
+  --accent-ink: #ffa06d;
+  --accent-soft: #3b2215;
+  --good: #3dbd82;
+  --good-soft: #0f3324;
+  --warn: #e5b03f;
+  --warn-soft: #382b0e;
+  --bad: #ff7363;
+  --bad-soft: #3d1a16;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.4);
+  --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

@@ -12,7 +12,7 @@ import { addPoints, remind, setCaptain, setMentor, setUserStatus } from '@/app/a
 
 export const metadata: Metadata = { title: 'Амбассадор' };
 
-type U = { id: number; name: string; email: string; phone: string | null; segment: Segment; regionId: string; city: string; status: string; isCaptain: boolean; points: number; spent: number; org: string | null; position: string | null; motivation: string | null; mentorId: number | null; mentorName: string | null; createdAt: Date; approvedAt: Date | null; lastActiveAt: Date | null };
+type U = { id: number; name: string; email: string; phone: string | null; segment: Segment; regionId: string; city: string; status: string; isCaptain: boolean; points: number; spent: number; org: string | null; position: string | null; motivation: string | null; mentorId: number | null; mentorName: string | null; createdAt: Date; approvedAt: Date | null; lastActiveAt: Date | null; iniJoined: number; iniAuthored: number };
 
 export default async function AmbassadorPage({ params }: { params: Promise<{ id: string }> }) {
   await requireCurator();
@@ -20,7 +20,9 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
   const sql = db();
   const [u] = await sql<U[]>`
     select u.id, u.name, u.email, u.phone, u.segment, u.region_id, r.city, u.status, u.is_captain, u.points, u.spent, u.org, u.position, u.motivation,
-      u.mentor_id, m.name as mentor_name, u.created_at, u.approved_at, u.last_active_at
+      u.mentor_id, m.name as mentor_name, u.created_at, u.approved_at, u.last_active_at,
+      (select count(*)::int from initiatives i where i.status = 'done' and (i.author_id = u.id or exists (select 1 from initiative_members im where im.initiative_id = i.id and im.user_id = u.id and im.status = 'accepted'))) as ini_joined,
+      (select count(*)::int from initiatives i where i.status = 'done' and i.author_id = u.id) as ini_authored
     from users u left join regions r on r.id = u.region_id left join users m on m.id = u.mentor_id
     where u.id = ${Number(id) || 0} and u.role = 'ambassador'`;
   if (!u) notFound();
@@ -39,7 +41,7 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
         where u.role = 'ambassador' and u.status = 'active' and u.segment in ('office', 'site')
         order by (u.region_id = ${u.regionId}) desc, u.name limit 200`
     : [];
-  const lv = levelOf(u.points);
+  const lv = levelOf(u.points, u);
 
   return (
     <div className="stack" style={{ '--gap': '18px' } as React.CSSProperties}>
@@ -90,7 +92,7 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
                 <SubmitButton className="btn small">{u.status === 'paused' ? 'Вернуть в программу' : 'Поставить на паузу'}</SubmitButton>
               </form>
             </div>
-            {!u.isCaptain && lv.n < 4 ? <p className="fine">Капитанами обычно становятся амбассадоры уровня «Лидер» (от 1200 баллов).</p> : null}
+            {!u.isCaptain && lv.n < 4 ? <p className="fine">Капитанами обычно становятся амбассадоры уровня «Лидер»: 1200 баллов и своя реализованная инициатива.</p> : null}
           </section>
 
           <section className="card">
