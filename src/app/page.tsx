@@ -304,7 +304,7 @@ export default async function Landing() {
             </div>
             <div className="faq">
               {FAQ.map(([q, a], i) => (
-                <details key={q} data-reveal style={{ '--i': i % 4 } as React.CSSProperties}><summary>{q}</summary><p>{a}</p></details>
+                <details key={i} data-reveal style={{ '--i': i % 4 } as React.CSSProperties}><summary>{q}</summary><p>{a}</p></details>
               ))}
             </div>
           </div>

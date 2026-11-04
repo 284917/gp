@@ -369,6 +369,8 @@
   .hero { padding-block: 24px 36px; }
   .hero-grid { gap: 28px; }
   .hero .display { font-size: clamp(46px, 14.5vw, 64px); }
+  /* первый экран телефона показываем сразу, без входной анимации */
+  .hero .rise, .hero .display .row-in { animation: none; }
   .hero .lead { font-size: 16px; }
   .hero-stats { gap: 20px; }
   .hero-stats b { font-size: 30px; }
@@ -385,10 +387,13 @@
   .journey .j-ic { width: 48px; height: 48px; border-radius: 14px; }
   .journey li { grid-template-columns: 48px minmax(0, 1fr); }
   .journey::before { left: 23px; }
-  .levels > div { padding: 16px; gap: 8px; }
-  .levels .lv-n { font-size: 34px; }
+  .levels > div { padding: 16px; grid-template-columns: 30px minmax(0, 1fr); column-gap: 12px; row-gap: 6px; }
+  .levels > div > * { grid-column: 2; }
+  .levels .lv-n { grid-column: 1; grid-row: 1 / span 2; font-size: 34px; }
+  .levels .ticks { gap: 6px; margin-top: 4px; }
   .perks { gap: 10px; }
-  .perks .card { padding: 16px; }
+  .perks .card { padding: 16px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; row-gap: 10px; }
+  .perks .card ul { grid-column: 1 / -1; }
   .how { gap: 20px; }
   .faq details { padding: 14px 16px; }
   .cta-band { padding: 24px; }
@@ -400,13 +405,13 @@
   .flow-box > .flow { display: none; }
   .flow-list { display: grid; gap: 8px; }
 }
-.flow-list li { display: grid; grid-template-columns: minmax(0, auto) 28px minmax(0, 1fr); align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
-.flow-list .fl-from { font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
+.flow-list li { display: grid; grid-template-columns: minmax(0, auto) 20px minmax(0, 1fr); align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
+.flow-list .fl-from { font-weight: 700; font-size: 14.5px; display: inline-flex; align-items: center; gap: 8px; }
 .flow-list .fl-from::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
 .flow-list .fl-arrow { height: 2px; background: var(--accent); position: relative; border-radius: 1px; }
 .flow-list .fl-arrow::after { content: ''; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--accent); border-right: 0; }
 .flow-list .fl-to { display: flex; flex-wrap: wrap; gap: 6px; }
-.flow-list .fl-to span { font-size: 14px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.flow-list .fl-to span { font-size: 13px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
 .flow-list li.fl-hub { display: block; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
 .flow-list .fl-hub b { color: var(--fg); }
 .landing-flow .flow-list li, .community .flow-list li { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.14); }
