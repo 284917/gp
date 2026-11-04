@@ -42,11 +42,11 @@ jobs:
         run: |
           npx next start > server.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:3000/api/health && break; sleep 1; done
-      - run: node scripts/deck/shots.mjs
+      - run: node scripts/deck/audit.mjs
       - name: Commit screenshots
         run: |
           git config user.name "deck-shots"
           git config user.email "deck-shots@users.noreply.github.com"
-          git add deck-shots
-          git commit -m "Скриншоты для презентации" || echo "нет изменений"
+          git add audit-shots
+          git commit -m "Скриншоты для аудита" || echo "нет изменений"
           git push
