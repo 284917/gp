@@ -17,7 +17,7 @@
   "dependencies": {
     "@fontsource/golos-text": "^5.2.5",
     "@fontsource/roboto-condensed": "^5.2.5",
-    "@vercel/blob": "^1.0.0",
+    "@vercel/blob": "^2.4.0",
     "bcryptjs": "^3.0.2",
     "jose": "^6.0.8",
     "next": "^15.5.4",

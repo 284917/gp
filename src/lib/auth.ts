@@ -116,4 +116,4 @@ export async function requireAmbassador() {
   return u;
 }
 
-export const blobEnabled = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+export { blobEnabled } from './files';

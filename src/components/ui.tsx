@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Icon, Mark, Wave, type IconName } from './Icon';
 import { KINDS, LEVELS, MONTHS, levelProgress, seasonInfo, type InitiativeTrack, type Kind, type SubmissionStatus } from '@/lib/domain';
 import { fmtNum, initials } from '@/lib/format';
+import { fileSrc } from '@/lib/files';
 
 export function Brand({ href = '/' }: { href?: string }) {
   return (
@@ -119,13 +120,14 @@ export function SeasonStrip() {
   );
 }
 
-export function MediaPreview({ url, name }: { url: string; name?: string | null }) {
-  const lower = (name || url).toLowerCase().split('?')[0];
+export function MediaPreview({ id, url: stored, name }: { id: number; url: string; name?: string | null }) {
+  const url = fileSrc(id, stored);
+  const lower = (name || stored).toLowerCase().split('?')[0];
   if (/\.(png|jpe?g|webp|gif|heic|avif)$/.test(lower)) {
     // eslint-disable-next-line @next/next/no-img-element
     return <a className="media-prev" href={url} target="_blank" rel="noreferrer"><img src={url} alt={name || 'Вложение'} loading="lazy" /></a>;
   }
   if (/\.(mp4|webm|mov|m4v)$/.test(lower)) return <div className="media-prev"><video src={url} controls preload="metadata" /></div>;
-  if (/\.(mp3|m4a|ogg|wav|aac|opus)$/.test(lower)) return <div className="media-prev" style={{ padding: 8 }}><audio src={url} controls preload="metadata" /></div>;
+  if (/\.(mp3|m4a|ogg|oga|wav|aac|opus)$/.test(lower)) return <div className="media-prev" style={{ padding: 8 }}><audio src={url} controls preload="metadata" /></div>;
   return <a className="link row" href={url} target="_blank" rel="noreferrer"><Icon name="file" size={16} /> {name || 'Открыть файл'}</a>;
 }

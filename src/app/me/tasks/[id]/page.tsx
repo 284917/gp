@@ -82,7 +82,7 @@ export default async function TaskPage({ params, searchParams }: { params: Promi
                 </div>
                 {s.body ? <p className="text-pre" style={{ fontSize: 14.5 }}>{s.body}</p> : null}
                 {s.link ? <a className="link" href={s.link} target="_blank" rel="noreferrer">{s.link}</a> : null}
-                {s.fileUrl ? <MediaPreview url={s.fileUrl} name={s.fileName} /> : null}
+                {s.fileUrl ? <MediaPreview id={s.id} url={s.fileUrl} name={s.fileName} /> : null}
                 {s.status !== 'pending' && s.reviewerName ? (
                   <p className="fine">
                     {s.reviewerRole === 'captain' ? 'Капитан' : 'Куратор'} {s.reviewerName}
