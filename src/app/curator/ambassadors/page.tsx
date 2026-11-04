@@ -9,7 +9,7 @@ import { Icon } from '@/components/Icon';
 
 export const metadata: Metadata = { title: 'Амбассадоры' };
 
-type Row = { id: number; name: string; segment: Segment; city: string | null; points: number; isCaptain: boolean; status: string; lastSub: Date | null; approvedAt: Date | null; approved: number; pending: number };
+type Row = { id: number; name: string; segment: Segment; city: string | null; points: number; isCaptain: boolean; status: string; lastSub: Date | null; approvedAt: Date | null; approved: number; pending: number; iniJoined: number; iniAuthored: number };
 
 export default async function AmbassadorsPage({ searchParams }: { searchParams: Promise<{ q?: string; group?: string; region?: string; filter?: string }> }) {
   await requireCurator();
@@ -25,7 +25,9 @@ export default async function AmbassadorsPage({ searchParams }: { searchParams: 
     select u.id, u.name, u.segment, r.city, u.points, u.is_captain, u.status, u.approved_at,
       (select max(created_at) from submissions s where s.user_id = u.id) as last_sub,
       (select count(*)::int from submissions s where s.user_id = u.id and s.status = 'approved') as approved,
-      (select count(*)::int from submissions s where s.user_id = u.id and s.status = 'pending') as pending
+      (select count(*)::int from submissions s where s.user_id = u.id and s.status = 'pending') as pending,
+      (select count(*)::int from initiatives i where i.status = 'done' and (i.author_id = u.id or exists (select 1 from initiative_members im where im.initiative_id = i.id and im.user_id = u.id and im.status = 'accepted'))) as ini_joined,
+      (select count(*)::int from initiatives i where i.status = 'done' and i.author_id = u.id) as ini_authored
     from users u left join regions r on r.id = u.region_id
     where u.role = 'ambassador' and u.status in ('active', 'paused')
       ${q ? sql`and (u.name ilike ${'%' + q + '%'} or u.email ilike ${'%' + q + '%'} or u.org ilike ${'%' + q + '%'})` : sql``}
@@ -79,7 +81,7 @@ export default async function AmbassadorsPage({ searchParams }: { searchParams: 
                     <td className="nowrap"><Link className="rowlink" href={`/curator/ambassadors/${r.id}`}>{r.name}</Link>{r.isCaptain ? <> <span className="chip accent">капитан</span></> : null}</td>
                     <td className="nowrap">{SEGMENTS[r.segment]?.label}</td>
                     <td className="nowrap">{r.city}</td>
-                    <td>{levelOf(r.points).name}</td>
+                    <td>{levelOf(r.points, r).name}</td>
                     <td className="n">{fmtNum(r.points)}</td>
                     <td className="n">{r.approved}{r.pending ? <span className="fine"> +{r.pending}</span> : null}</td>
                     <td className="n">{r.lastSub ? timeAgo(r.lastSub) : '—'}</td>

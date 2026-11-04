@@ -30,6 +30,9 @@ export type SessionUser = {
   isDemo: boolean;
   createdAt: Date;
   lastActiveAt: Date | null;
+  /** завершённые инициативы: всего (автором или в команде) и свои — нужны для уровня */
+  iniJoined: number;
+  iniAuthored: number;
 };
 
 function secretKey() {
@@ -74,7 +77,9 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
   const rows = await db()<SessionUser[]>`
     select u.id, u.email, u.name, u.role, u.curator_scope, u.segment, u.region_id, u.status, u.is_captain,
            u.points, u.spent, u.org, u.position, u.phone, u.motivation, u.mentor_id, u.is_demo, u.created_at, u.last_active_at,
-           r.city as region_city, r.name as region_name
+           r.city as region_city, r.name as region_name,
+           (select count(*)::int from initiatives i where i.status = 'done' and (i.author_id = u.id or exists (select 1 from initiative_members im where im.initiative_id = i.id and im.user_id = u.id and im.status = 'accepted'))) as ini_joined,
+           (select count(*)::int from initiatives i where i.status = 'done' and i.author_id = u.id) as ini_authored
     from users u left join regions r on r.id = u.region_id
     where u.id = ${id}`;
   return rows[0] ?? null;

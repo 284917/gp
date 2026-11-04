@@ -54,14 +54,15 @@ export async function getProgramStats() {
       count(*) filter (where is_demo)::int as demo_months
     from metrics where month >= ${season.months[0].key} and month <= ${season.months[8].key}`;
 
-  const [att] = await sql<{ moderation: number; flagged: number; applications: number; redemptions: number; sleeping: number; noCaptain: number }[]>`
+  const [att] = await sql<{ moderation: number; flagged: number; applications: number; redemptions: number; sleeping: number; noCaptain: number; demoUsers: number }[]>`
     select (select count(*)::int from submissions where status = 'pending') as moderation,
       (select count(*)::int from submissions where status = 'pending' and flagged) as flagged,
       (select count(*)::int from users where role = 'ambassador' and status = 'pending') as applications,
       (select count(*)::int from redemptions where status = 'requested') as redemptions,
       (select count(*)::int from users u where role = 'ambassador' and status = 'active'
          and coalesce((select max(created_at) from submissions s where s.user_id = u.id), u.approved_at, u.created_at) < now() - interval '14 days') as sleeping,
-      (select count(*)::int from regions r where not exists (select 1 from users u where u.region_id = r.id and u.is_captain and u.status = 'active')) as no_captain`;
+      (select count(*)::int from regions r where not exists (select 1 from users u where u.region_id = r.id and u.is_captain and u.status = 'active')) as no_captain,
+      (select count(*)::int from users where is_demo) as demo_users`;
 
   // Сколько месяцев сезона прошло (для оценки «по плану»)
   const elapsed = Math.max(1, Math.min(9, season.monthsPassed + 1));

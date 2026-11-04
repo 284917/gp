@@ -39,8 +39,8 @@ export default async function CuratorOverview() {
       <PageHead title="Обзор программы" eyebrow={`Сезон ${s.season.label} · ${s.season.current?.now ?? 'межсезонье'}`}
         sub={`Здравствуйте, ${c.name.split(' ')[0]}. Вот что происходит в программе сейчас.`} />
 
-      {s.m.demoMonths > 0 ? (
-        <Alert tone="info"><b>Демонстрация кейса.</b> Внешние метрики за {s.m.demoMonths} мес. содержат модельные значения, а не официальные результаты компании. Активность, задания и инициативы взяты из базы прототипа.</Alert>
+      {s.m.demoMonths > 0 || s.att.demoUsers > 0 ? (
+        <Alert tone="info"><b>Модельные данные.</b> {s.att.demoUsers > 0 ? 'Участники, задания и инициативы в прототипе созданы для демонстрации кейса. ' : ''}{s.m.demoMonths > 0 ? `Внешние метрики за ${s.m.demoMonths} мес. — модельные значения. ` : ''}Это не официальные результаты компании.</Alert>
       ) : null}
 
       <div className="attention">

@@ -12,8 +12,9 @@ async function load() {
   try {
     const sql = db();
     const [[row], regions] = await Promise.all([
-      sql<{ ambassadors: number; regions: number; done: number; replicas: number }[]>`
+      sql<{ ambassadors: number; regions: number; done: number; replicas: number; demo: number }[]>`
         select (select count(*)::int from users where role = 'ambassador' and status = 'active') as ambassadors,
+               (select count(*)::int from users where is_demo) as demo,
                (select count(distinct region_id)::int from users where role = 'ambassador' and status = 'active') as regions,
                (select count(*)::int from initiatives where status = 'done') as done,
                (select count(*)::int from initiatives where source_id is not null and status not in ('idea', 'declined')) as replicas`,
@@ -35,7 +36,7 @@ const FAQ = [
   ['Сколько времени это занимает?', 'Задания недели занимают от 5 до 30 минут. Для сотрудников АЗС и нефтебаз есть форматы «с телефона за пять минут», в том числе голосовые. Инициативы — по желанию: вы сами выбираете проект и роль в команде.'],
   ['Что такое биржа инициатив?', 'Место, где амбассадоры предлагают свои проекты: интервью, экскурсии, встречи, серии публикаций. Автор описывает идею и кого ищет, куратор согласует, а сотрудники и студенты откликаются и собирают команду.'],
   ['Платят ли за участие?', 'Нет, и бонусов за участие тоже нет. Баллы за задания и проекты открывают опыт и признание: встречи с руководителями, обучение, выступление на форуме, мерч программы.'],
-  ['Как студенту получить приоритет на практику?', 'Приоритет не покупается за баллы. Его получают студенты уровня «Эксперт», которые довели до результата хотя бы одну инициативу: автором или в команде.'],
+  ['Даёт ли программа преимущество при отборе на практику?', 'Нет: практика и стажировки проходят на общих условиях для всех. Программа помогает к ним подготовиться — карьерные консультации с HR, встречи с экспертами компании, разбор резюме и пробное собеседование.'],
   ['Можно ли снимать на АЗС и нефтебазе?', 'Только в зонах, которые согласовал руководитель объекта. Проекты на объектах согласует куратор, а в контент-ките есть памятка «можно / нельзя».'],
   ['Мне нет 18 лет, я студент колледжа. Можно?', 'Да. Для съёмок и выездов понадобится согласие родителей: куратор пришлёт форму после одобрения заявки.'],
   ['Кто проверяет работу?', 'Задания недели проверяет капитан региона. Идеи инициатив, публикации и итоги проектов смотрят кураторы программы.'],
@@ -117,6 +118,11 @@ export default async function Landing() {
                   <div><b data-count={s.regions}>{fmtNum(s.regions)}</b><span>{plural(s.regions, 'регион', 'региона', 'регионов')}</span></div>
                   {s.done ? <div><b data-count={s.done}>{fmtNum(s.done)}</b><span>{plural(s.done, 'проект завершён', 'проекта завершено', 'проектов завершено')}</span></div> : null}
                 </div>
+              ) : null}
+              {s && s.demo > 0 ? (
+                <p className="fine rise demo-flag" style={{ '--i': 4 } as React.CSSProperties}>
+                  <Icon name="info" size={14} /> Цифры и участники на сайте — модельные данные прототипа для кейса, а не результаты компании.
+                </p>
               ) : null}
             </div>
             <div className="stack-demo rise" style={{ '--i': 2 } as React.CSSProperties} aria-hidden="true">
@@ -210,7 +216,7 @@ export default async function Landing() {
                 <div className="chart-wrap">
                   <RegionFlow regions={regions} flows={flows} label="Пример: формат из одного города повторяют в соседних регионах" />
                 </div>
-                <p className="fine" style={{ color: 'var(--on-deep-muted)' }}>Схема показывает принцип: дуги — повторы форматов между городами программы.</p>
+                <p className="fine" style={{ color: 'var(--on-deep-muted)' }}>Схема показывает принцип: формат из одного города повторяют в соседних регионах программы.</p>
               </div>
             </div>
           </section>
@@ -221,7 +227,7 @@ export default async function Landing() {
             <div className="section-head" style={{ marginBottom: 0 }} data-reveal>
               <p className="eyebrow">Путь амбассадора</p>
               <h2 className="h1">Четыре уровня за сезон</h2>
-              <p className="lead">Баллы за задания и проекты поднимают уровень. Каждый уровень открывает новые возможности, а лидеры становятся капитанами регионов.</p>
+              <p className="lead">Уровень растёт от баллов за задания и проекты. Для двух старших нужен ещё и вклад в инициативы: эксперт участвует в проекте, лидер доводит до результата свой.</p>
             </div>
             <div className="levels" data-reveal>
               {LEVELS.map((l) => (
@@ -229,6 +235,7 @@ export default async function Landing() {
                   <span className="lv-n">{l.n}</span>
                   <span className="lv-name">{l.name}</span>
                   <span className="fine">{l.min ? `от ${fmtNum(l.min)} баллов` : 'с первого дня'}</span>
+                  {l.needText ? <span className="lv-need"><Icon name="rocket" size={14} /> и {l.needText}</span> : null}
                   <ul className="ticks">
                     {l.unlocks.map((u) => <li key={u}><Icon name="check" size={16} /><span style={{ fontSize: 14 }}>{u}</span></li>)}
                   </ul>
@@ -267,7 +274,7 @@ export default async function Landing() {
             <div className="perks">
               <article className="card" data-reveal><Icon name="trophy" size={26} /><h3 className="h3">Признание</h3><ul><li>Авторство формата в библиотеке</li><li>Выступление на форуме амбассадоров</li><li>Кубок регионов</li></ul></article>
               <article className="card" data-reveal style={{ '--i': 1 } as React.CSSProperties}><Icon name="bolt" size={26} /><h3 className="h3">Развитие</h3><ul><li>Сторителлинг и выступления</li><li>Управление проектом и командой</li><li>Разбор проекта с экспертом</li></ul></article>
-              <article className="card" data-reveal style={{ '--i': 2 } as React.CSSProperties}><Icon name="star" size={26} /><h3 className="h3">Карьера</h3><ul><li>Приоритет на практику за вклад в сезон</li><li>Рекомендательное письмо</li><li>Запись в карьерном профиле</li></ul></article>
+              <article className="card" data-reveal style={{ '--i': 2 } as React.CSSProperties}><Icon name="star" size={26} /><h3 className="h3">Карьера</h3><ul><li>Карьерные консультации с HR</li><li>Встречи с экспертами компании</li><li>Помощь в подготовке к отбору на практику</li></ul></article>
               <article className="card" data-reveal style={{ '--i': 3 } as React.CSSProperties}><Icon name="gift" size={26} /><h3 className="h3">Сообщество</h3><ul><li>Команды из разных городов</li><li>Встречи с руководителями</li><li>Мерч программы</li></ul></article>
             </div>
           </div>
@@ -297,7 +304,7 @@ export default async function Landing() {
             </div>
             <div className="faq">
               {FAQ.map(([q, a], i) => (
-                <details key={q} data-reveal style={{ '--i': i % 4 } as React.CSSProperties}><summary>{q}</summary><p>{a}</p></details>
+                <details key={i} data-reveal style={{ '--i': i % 4 } as React.CSSProperties}><summary>{q}</summary><p>{a}</p></details>
               ))}
             </div>
           </div>

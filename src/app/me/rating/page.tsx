@@ -7,15 +7,18 @@ import { PageHead } from '@/components/ui';
 
 export const metadata: Metadata = { title: 'Рейтинг' };
 
-type Person = { id: number; name: string; points: number; isCaptain: boolean; segment: Segment };
+type Person = { id: number; name: string; points: number; isCaptain: boolean; segment: Segment; iniJoined: number; iniAuthored: number };
 
 export default async function RatingPage() {
   const u = await requireAmbassador();
   const sql = db();
   const region = await sql<Person[]>`
-    select id, name, points, is_captain, segment from users
-    where role = 'ambassador' and status = 'active' and region_id = ${u.regionId}
-    order by points desc, name`;
+    select u.id, u.name, u.points, u.is_captain, u.segment,
+      (select count(*)::int from initiatives i where i.status = 'done' and (i.author_id = u.id or exists (select 1 from initiative_members im where im.initiative_id = i.id and im.user_id = u.id and im.status = 'accepted'))) as ini_joined,
+      (select count(*)::int from initiatives i where i.status = 'done' and i.author_id = u.id) as ini_authored
+    from users u
+    where u.role = 'ambassador' and u.status = 'active' and u.region_id = ${u.regionId}
+    order by u.points desc, u.name`;
   const [rank] = await sql<{ above: number; total: number }[]>`
     select count(*) filter (where points > ${u.points})::int as above, count(*)::int as total
     from users where role = 'ambassador' and status = 'active'`;
@@ -47,7 +50,7 @@ export default async function RatingPage() {
                     {p.name}
                     {p.id === u.id ? <span className="chip brand">вы</span> : null}
                     {p.isCaptain ? <span className="chip accent">капитан</span> : null}
-                    <span className="fine">{SEGMENTS[p.segment]?.label} · {levelOf(p.points).name}</span>
+                    <span className="fine">{SEGMENTS[p.segment]?.label} · {levelOf(p.points, p).name}</span>
                   </span>
                   <span className="lb-p">{fmtNum(p.points)}</span>
                 </li>

@@ -11,14 +11,16 @@ import { resolveRedemption, saveReward, toggleReward } from '@/app/actions/curat
 export const metadata: Metadata = { title: 'Награды' };
 
 type Reward = { id: number; title: string; category: string; cost: number; minLevel: number; audience: 'all' | 'internal' | 'external'; note: string | null; active: boolean; given: number };
-type Req = { id: number; userId: number; userName: string; segment: Segment; city: string; points: number; title: string; cost: number; createdAt: Date };
+type Req = { id: number; userId: number; userName: string; segment: Segment; city: string; points: number; title: string; cost: number; createdAt: Date; iniJoined: number; iniAuthored: number };
 
 export default async function CuratorRewards({ searchParams }: { searchParams: Promise<{ edit?: string; ok?: string; err?: string }> }) {
   await requireCurator();
   const sp = await searchParams;
   const sql = db();
   const requests = await sql<Req[]>`
-    select d.id, u.id as user_id, u.name as user_name, u.segment, r.city, u.points, w.title, d.cost, d.created_at
+    select d.id, u.id as user_id, u.name as user_name, u.segment, r.city, u.points, w.title, d.cost, d.created_at,
+      (select count(*)::int from initiatives i where i.status = 'done' and (i.author_id = u.id or exists (select 1 from initiative_members im where im.initiative_id = i.id and im.user_id = u.id and im.status = 'accepted'))) as ini_joined,
+      (select count(*)::int from initiatives i where i.status = 'done' and i.author_id = u.id) as ini_authored
     from redemptions d join users u on u.id = d.user_id join rewards w on w.id = d.reward_id left join regions r on r.id = u.region_id
     where d.status = 'requested' order by d.created_at`;
   const rewards = await sql<Reward[]>`
@@ -42,7 +44,7 @@ export default async function CuratorRewards({ searchParams }: { searchParams: P
               <article key={q.id} className="mod">
                 <div className="mod-top">
                   <Avatar name={q.userName} className="soft sm" />
-                  <div className="mod-who"><Link className="rowlink" style={{ fontWeight: 700, textDecoration: 'none' }} href={`/curator/ambassadors/${q.userId}`}>{q.userName}</Link><span>{SEGMENTS[q.segment]?.label} · {q.city} · {levelOf(q.points).name} · {timeAgo(q.createdAt)}</span></div>
+                  <div className="mod-who"><Link className="rowlink" style={{ fontWeight: 700, textDecoration: 'none' }} href={`/curator/ambassadors/${q.userId}`}>{q.userName}</Link><span>{SEGMENTS[q.segment]?.label} · {q.city} · {levelOf(q.points, q).name} · {timeAgo(q.createdAt)}</span></div>
                 </div>
                 <p className="mod-title">{q.title} <span className="pts">{fmtNum(q.cost)}</span></p>
                 <div className="btns">

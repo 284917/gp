@@ -14,10 +14,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ecf1f7' },
-    { media: '(prefers-color-scheme: dark)', color: '#08111e' },
-  ],
+  // Одна палитра для всех устройств, поэтому и цвет панели браузера один
+  themeColor: '#08111e',
+  colorScheme: 'dark',
   viewportFit: 'cover',
 };
 
