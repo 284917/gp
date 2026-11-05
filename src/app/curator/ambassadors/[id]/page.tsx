@@ -9,10 +9,11 @@ import { Avatar, SubmissionChip } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { SubmitButton } from '@/components/SubmitButton';
 import { addPoints, remind, setCaptain, setMentor, setUserStatus } from '@/app/actions/curator';
+import { ResetPasswordForm } from '@/components/SupportForms';
 
 export const metadata: Metadata = { title: 'Амбассадор' };
 
-type U = { id: number; name: string; email: string; phone: string | null; segment: Segment; regionId: string; city: string; status: string; isCaptain: boolean; points: number; spent: number; org: string | null; position: string | null; motivation: string | null; mentorId: number | null; mentorName: string | null; createdAt: Date; approvedAt: Date | null; lastActiveAt: Date | null; iniJoined: number; iniAuthored: number };
+type U = { id: number; name: string; email: string; phone: string | null; segment: Segment; regionId: string; city: string; status: string; isCaptain: boolean; points: number; spent: number; org: string | null; position: string | null; motivation: string | null; mentorId: number | null; mentorName: string | null; createdAt: Date; approvedAt: Date | null; lastActiveAt: Date | null; iniJoined: number; iniAuthored: number; passwordTemp: boolean };
 
 export default async function AmbassadorPage({ params }: { params: Promise<{ id: string }> }) {
   await requireCurator();
@@ -20,7 +21,7 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
   const sql = db();
   const [u] = await sql<U[]>`
     select u.id, u.name, u.email, u.phone, u.segment, u.region_id, r.city, u.status, u.is_captain, u.points, u.spent, u.org, u.position, u.motivation,
-      u.mentor_id, m.name as mentor_name, u.created_at, u.approved_at, u.last_active_at,
+      u.mentor_id, m.name as mentor_name, u.created_at, u.approved_at, u.last_active_at, u.password_temp,
       (select count(*)::int from initiatives i where i.status = 'done' and (i.author_id = u.id or exists (select 1 from initiative_members im where im.initiative_id = i.id and im.user_id = u.id and im.status = 'accepted'))) as ini_joined,
       (select count(*)::int from initiatives i where i.status = 'done' and i.author_id = u.id) as ini_authored
     from users u left join regions r on r.id = u.region_id left join users m on m.id = u.mentor_id
@@ -93,6 +94,11 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
               </form>
             </div>
             {!u.isCaptain && lv.n < 4 ? <p className="fine">Капитанами обычно становятся амбассадоры уровня «Лидер»: 1200 баллов и своя реализованная инициатива.</p> : null}
+          </section>
+
+          <section className="card">
+            <p className="label">Доступ в кабинет</p>
+            <ResetPasswordForm id={u.id} temp={u.passwordTemp} />
           </section>
 
           <section className="card">

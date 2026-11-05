@@ -15,7 +15,7 @@ type M = { month: string; reach: number; interactions: number; careerVisits: num
 const FIELDS: [keyof M, string, string][] = [
   ['reach', 'Охват публикаций', 'Сумма охватов постов с #ГолосКомпании'],
   ['interactions', 'Реакции и комментарии', 'Лайки, комментарии, репосты'],
-  ['careerVisits', 'Переходы на страницы карьеры', 'По UTM-меткам в ссылках амбассадоров'],
+  ['careerVisits', 'Переходы на страницы карьеры', 'Визиты с utm_source=ambassador: ссылки из контент-кита, utm_content — номер амбассадора'],
   ['applications', 'Отклики и заявки', 'Из системы подбора по источнику'],
   ['hires', 'Приняты на работу или практику', 'Из системы подбора'],
   ['referralCandidates', 'Кандидаты по рекомендациям', 'Реферальная программа'],

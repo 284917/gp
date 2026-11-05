@@ -170,7 +170,7 @@ select.field { appearance: none; background-image: linear-gradient(45deg, transp
 .avatar.sm { width: 32px; height: 32px; font-size: 12px; }
 .avatar.lg { width: 56px; height: 56px; font-size: 19px; }
 .pair { display: flex; flex: none; }
-.pair .avatar + .avatar { margin-left: -10px; box-shadow: 0 0 0 2px var(--surface); }
+.pair .avatar + .avatar { margin-left: -6px; box-shadow: 0 0 0 2px var(--surface); }
 
 .t-ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; flex: none; }
 .t-ic.lg { width: 50px; height: 50px; border-radius: 14px; }
@@ -407,7 +407,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
 .rw-act summary { list-style: none; }
 .rw-act summary::-webkit-details-marker { display: none; }
 .confirm { position: absolute; right: 0; top: calc(100% + 8px); z-index: 5; width: 250px; display: grid; gap: 10px; padding: 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
-.balance { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.balance { display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
 .balance-v { font: 700 44px / 1 var(--f-display); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 
 .notif { display: flex; gap: 12px; align-items: flex-start; text-decoration: none; }

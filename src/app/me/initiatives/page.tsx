@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { INITIATIVE_POINTS, SEGMENTS } from '@/lib/domain';
 import { Empty } from '@/components/ui';
 import { Icon } from '@/components/Icon';
+import { ShowMore } from '@/components/ShowMore';
 import { InitiativeTile } from '@/components/Initiative';
 import { HubTabs } from '@/components/HubTabs';
 
@@ -73,15 +74,15 @@ export default async function InitiativesPage({ searchParams }: { searchParams: 
       <nav className="tabs" aria-label="Фильтр инициатив">
         {VIEWS.map((v) => (
           <Link key={v.key} href={v.key === 'all' ? '/me/initiatives' : `/me/initiatives?view=${v.key}`} aria-current={view === v.key ? 'page' : undefined}>
-            {v.key === 'me' && u.segment ? `Ищут: ${SEGMENTS[u.segment].label.toLowerCase()}` : v.key === 'region' ? `Мой регион · ${u.regionCity ?? ''}` : v.label}
+            {v.key === 'me' && u.segment ? `Ищут ${SEGMENTS[u.segment].whom}` : v.key === 'region' ? `Мой регион · ${u.regionCity ?? ''}` : v.label}
           </Link>
         ))}
       </nav>
 
       {items.length ? (
-        <div className="igrid">
+        <ShowMore total={items.length}>
           {items.map((i, n) => <InitiativeTile key={i.id} i={i} index={n} href={`/me/initiatives/${i.id}`} />)}
-        </div>
+        </ShowMore>
       ) : (
         <div className="empty-hero" data-reveal>
           <span className="empty-ic"><Icon name="sparkle" size={30} /></span>

@@ -4,7 +4,7 @@ import { requireAmbassador } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { SEGMENTS, levelOf, type SubmissionStatus } from '@/lib/domain';
 import { fmtDate, fmtNum } from '@/lib/format';
-import { Avatar, PageHead, SubmissionChip } from '@/components/ui';
+import { Alert, Avatar, PageHead, SubmissionChip } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { PasswordForm, ProfileForm } from '@/components/ProfileForms';
 import { logout } from '@/app/actions/auth';
@@ -28,6 +28,7 @@ export default async function ProfilePage() {
     <>
       <PageHead title="Профиль" eyebrow="Мой кабинет" actions={<form action={logout}><button className="btn" type="submit"><Icon name="logout" size={16} /> Выйти</button></form>} />
       <div className="stack" style={{ '--gap': '18px' } as React.CSSProperties}>
+        {u.passwordTemp ? <Alert tone="warn" icon="lock">Вы вошли по временному паролю. <a className="link" href="#password">Задайте свой пароль</a> — это займёт минуту.</Alert> : null}
         <section className="card" style={{ padding: 22 }}>
           <div className="profile-head">
             <Avatar name={u.name} className="lg" />
@@ -78,9 +79,15 @@ export default async function ProfilePage() {
               <p className="label">Данные профиля</p>
               <ProfileForm name={u.name} phone={u.phone ?? ''} org={u.org ?? ''} position={u.position ?? ''} orgLabel={seg.orgLabel} posLabel={seg.posLabel} />
             </section>
-            <section className="card">
+            <section className="card" id="password">
               <p className="label">Пароль</p>
+              {u.passwordTemp ? <Alert tone="warn" icon="lock">Вы вошли по временному паролю от куратора. Задайте свой: в поле «Текущий пароль» введите временный.</Alert> : null}
               <PasswordForm />
+            </section>
+            <section className="card">
+              <p className="label">Нужна помощь</p>
+              <p className="sub">Вопрос о заданиях, баллах или наградах можно задать куратору программы. Ответ придёт уведомлением.</p>
+              <div><Link className="btn small" href="/help?topic=program"><Icon name="info" size={15} /> Вопрос куратору</Link></div>
             </section>
           </div>
         </div>

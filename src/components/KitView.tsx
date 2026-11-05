@@ -15,16 +15,39 @@ const SECTIONS = [
 type Section = (typeof SECTIONS)[number][0];
 type Format = 'post' | 'photo' | 'script';
 
-function build(segment: Segment, who: string, what: string, why: string, format: Format) {
+/** Каналы для UTM-метки: по ним кураторы видят, откуда пришли переходы на страницу карьеры. */
+const LINK_CHANNELS: Record<'internal' | 'external', [string, string][]> = {
+  internal: [['telegram', 'Telegram'], ['vk', 'VK'], ['max', 'MAX'], ['career_site', 'Карьерная площадка'], ['personal', 'Личная страница']],
+  external: [['campus', 'Паблик вуза или колледжа'], ['telegram', 'Telegram'], ['vk', 'VK'], ['qr', 'Стенд и QR-код'], ['personal', 'Личная страница']],
+};
+
+export function personalLink(base: string, userId: number, channel: string, season: string) {
+  const params = new URLSearchParams({
+    utm_source: 'ambassador',
+    utm_medium: channel,
+    utm_campaign: `golos_${season.replace(/\D+/g, '_')}`,
+    utm_content: `a${userId}`,
+  });
+  try {
+    const u = new URL(base);
+    params.forEach((v, k) => u.searchParams.set(k, v));
+    return u.toString();
+  } catch {
+    return `${base}${base.includes('?') ? '&' : '?'}${params}`;
+  }
+}
+
+function build(segment: Segment, who: string, what: string, why: string, format: Format, link: string) {
   const w = who.trim().replace(/[.!?]+$/, '');
   const a = what.trim();
   const b = why.trim();
-  if (format === 'photo') return `${b}\n\n${w}\n#ГолосКомпании`;
+  const tail = link ? `\n\n${groupOf(segment) === 'external' ? 'Практика и стажировки' : 'Вакансии компании'}: ${link}` : '';
+  if (format === 'photo') return `${b}\n\n${w}${tail}\n#ГолосКомпании`;
   if (format === 'script') return `0–3 с · крупный план, фраза в кадр:\n«${b}»\n\n3–18 с · вы в кадре:\n${w}. ${a}\n\n18–26 с · общий план места (только разрешённая зона)\n\n26–30 с · титр: #ГолосКомпании`;
-  return `${HOOKS[segment]}\n\n${w}.\n\n${a}\n\n${b}\n\nА у вас был похожий случай?\n#ГолосКомпании`;
+  return `${HOOKS[segment]}\n\n${w}.\n\n${a}\n\n${b}\n\nА у вас был похожий случай?${tail}\n#ГолосКомпании`;
 }
 
-export function KitView({ segment }: { segment: Segment }) {
+export function KitView({ segment, userId, careerUrl, season }: { segment: Segment; userId: number; careerUrl: string; season: string }) {
   const [section, setSection] = useState<Section>('builder');
   const ex = BUILDER_EXAMPLES[segment];
   const [who, setWho] = useState(ex.who);
@@ -32,10 +55,14 @@ export function KitView({ segment }: { segment: Segment }) {
   const [why, setWhy] = useState(ex.why);
   const [format, setFormat] = useState<Format>('post');
   const [copied, setCopied] = useState('');
+  const group = groupOf(segment);
+  const [channel, setChannel] = useState(LINK_CHANNELS[group][0][0]);
+  const [withLink, setWithLink] = useState(true);
+  const [linkCopied, setLinkCopied] = useState('');
+  const link = useMemo(() => personalLink(careerUrl, userId, channel, season), [careerUrl, userId, channel, season]);
   const [checks, setChecks] = useState<boolean[]>(RULES.checklist.map(() => false));
   const outRef = useRef<HTMLPreElement>(null);
-  const text = useMemo(() => build(segment, who, what, why, format), [segment, who, what, why, format]);
-  const group = groupOf(segment);
+  const text = useMemo(() => build(segment, who, what, why, format, withLink && format !== 'script' ? link : ''), [segment, who, what, why, format, withLink, link]);
   const scripts = [...SCRIPTS].sort((x, y) => Number(y.for.includes(segment)) - Number(x.for.includes(segment)));
 
   async function copy() {
@@ -50,8 +77,35 @@ export function KitView({ segment }: { segment: Segment }) {
     setTimeout(() => setCopied(''), 2500);
   }
 
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setLinkCopied('Ссылка скопирована');
+    } catch {
+      setLinkCopied('Выделите ссылку и скопируйте');
+    }
+    setTimeout(() => setLinkCopied(''), 2500);
+  }
+
   return (
     <div className="stack" style={{ '--gap': '16px' } as React.CSSProperties}>
+      <section className="card my-link">
+        <div className="between">
+          <div className="stack" style={{ '--gap': '2px' } as React.CSSProperties}>
+            <p className="label">Моя ссылка на страницу карьеры</p>
+            <p className="fine">Ставьте её в посты и на стенды: по метке куратор видит, сколько людей перешло от вас и из какого канала.</p>
+          </div>
+        </div>
+        <div className="tabs" role="group" aria-label="Где будет ссылка">
+          {LINK_CHANNELS[group].map(([k, l]) => <button key={k} type="button" aria-pressed={channel === k} onClick={() => setChannel(k)}>{l}</button>)}
+        </div>
+        <div className="link-row">
+          <input className="field" readOnly value={link} aria-label="Моя ссылка" onFocus={(e) => e.currentTarget.select()} />
+          <button type="button" className="btn primary" onClick={copyLink}><Icon name="copy" size={16} /> Скопировать</button>
+        </div>
+        {linkCopied ? <p className="fine" role="status">{linkCopied}</p> : null}
+      </section>
+
       <div className="tabs" role="group" aria-label="Разделы кита">
         {SECTIONS.map(([k, l]) => <button key={k} type="button" aria-pressed={section === k} onClick={() => setSection(k)}>{l}</button>)}
       </div>
@@ -68,6 +122,9 @@ export function KitView({ segment }: { segment: Segment }) {
                 <button key={k} type="button" aria-pressed={format === k} onClick={() => setFormat(k)}>{l}</button>
               ))}
             </div>
+            {format !== 'script' ? (
+              <label className="checkbox"><input type="checkbox" checked={withLink} onChange={(e) => setWithLink(e.target.checked)} /><span>Добавить мою ссылку в конец текста</span></label>
+            ) : null}
           </section>
           <section className="card">
             <div className="between"><p className="label">Черновик</p><span className="fine num">{text.length} знаков</span></div>

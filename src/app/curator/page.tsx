@@ -94,7 +94,7 @@ export default async function CuratorOverview() {
             <LineChart labels={s.weekLabels} ariaLabel="Принятые задания по неделям у сотрудников и студентов"
               series={[{ name: 'Сотрудники', values: s.weekInternal }, { name: 'Студенты', values: s.weekExternal }]} />
           </div>
-          <p className="fine">Принятые задания: посты, фото, видео, отчёты о встречах. Неделя начинается в понедельник по Москве.</p>
+          <p className="fine">Принятые задания: посты, фото, видео, отчёты о встречах. Показаны завершённые недели, текущая появится после воскресенья.</p>
         </section>
         <section className="card">
           <h2 className="h3">Нагрузка кураторов</h2>
@@ -145,17 +145,17 @@ export default async function CuratorOverview() {
         <div className="between"><h2 className="h3">Метрики программы</h2><span className="fine">прошло {Math.min(9, s.season.monthsPassed + 1)} из 9 месяцев сезона</span></div>
         <p className="sub">Три уровня: сначала видно вовлечённость амбассадоров, потом охват, в конце — результат для найма.</p>
         <div className="tbl-wrap">
-          <table className="tbl">
+          <table className="tbl mtable">
             <thead><tr><th>Метрика</th><th>Сейчас</th><th>Цель сезона</th><th>Статус</th></tr></thead>
             <tbody>
               {s.metrics.map((g) => [
                 <tr key={g.group} className="grp"><td colSpan={4}>{g.group}</td></tr>,
                 ...g.rows.map((r) => (
                   <tr key={r.name}>
-                    <td>{r.name}</td>
-                    <td className="n"><b>{r.now}</b></td>
-                    <td className="n">{r.target}</td>
-                    <td><span className={`chip ${METRIC_STATUS[r.status][0]}`}>{METRIC_STATUS[r.status][1]}</span></td>
+                    <td className="m-name">{r.name}</td>
+                    <td className="n m-now" data-l="сейчас"><b>{r.now}</b></td>
+                    <td className="n m-target" data-l="цель">{r.target}</td>
+                    <td className="m-status"><span className={`chip ${METRIC_STATUS[r.status][0]}`}>{METRIC_STATUS[r.status][1]}</span></td>
                   </tr>
                 )),
               ])}

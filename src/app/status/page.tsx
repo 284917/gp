@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Brand, Alert } from '@/components/ui';
 import { requireMember } from '@/lib/auth';
@@ -30,7 +31,7 @@ export default async function StatusPage() {
         ) : u.status === 'paused' ? (
           <div className="card" style={{ padding: 24, gap: 16 }}>
             <h1 className="h1">Участие на паузе</h1>
-            <p>Куратор поставил ваше участие на паузу. Баллы и уровень сохранены. Чтобы вернуться, напишите куратору программы.</p>
+            <p>Куратор поставил ваше участие на паузу. Баллы и уровень сохранены. Чтобы вернуться, <Link className="link" href="/help?topic=program">напишите куратору</Link>.</p>
           </div>
         ) : (
           <div className="card" style={{ padding: 24, gap: 16 }}>
@@ -38,7 +39,10 @@ export default async function StatusPage() {
             <p>Сейчас мы не можем принять вас в программу. Набор открывается каждый сентябрь — будем рады новой заявке.</p>
           </div>
         )}
-        <form action={logout}><button className="btn" type="submit">Выйти</button></form>
+        <div className="row">
+          <Link className="btn" href={`/help?topic=${u.status === 'paused' ? 'program' : 'application'}`}>Вопрос куратору</Link>
+          <form action={logout}><button className="btn ghost" type="submit">Выйти</button></form>
+        </div>
       </div>
     </div>
   );

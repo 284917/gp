@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Brand } from '@/components/ui';
 import { Wave } from '@/components/Icon';
@@ -28,7 +29,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <h2 className="h1">Войти</h2>
           </div>
           <LoginForm next={sp.next} />
-          <p className="fine">Забыли пароль? Напишите куратору программы — он поможет восстановить доступ.</p>
+          <p className="fine">Забыли пароль? <Link className="link" href="/help?topic=access">Напишите куратору</Link> — он выдаст временный пароль.</p>
         </div>
       </main>
     </div>

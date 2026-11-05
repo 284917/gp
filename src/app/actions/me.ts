@@ -94,7 +94,9 @@ export async function changePassword(_prev: FormState, fd: FormData): Promise<Fo
   const sql = db();
   const [row] = await sql<{ passwordHash: string }[]>`select password_hash from users where id = ${u.id}`;
   if (!row || !(await compare(current, row.passwordHash))) return { error: 'Текущий пароль указан неверно.' };
-  await sql`update users set password_hash = ${await hash(next, 10)} where id = ${u.id}`;
+  if (next === current) return { error: 'Новый пароль должен отличаться от текущего.' };
+  await sql`update users set password_hash = ${await hash(next, 10)}, password_temp = false where id = ${u.id}`;
+  revalidatePath('/me', 'layout');
   return { ok: 'Пароль изменён.' };
 }
 

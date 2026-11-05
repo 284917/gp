@@ -8,19 +8,59 @@ export type FlowRegion = { id: string; city: string; lon: number; lat: number };
 export type Flow = { fromId: string; toId: string };
 
 const W = 760;
-const H = 300;
+const H = 270;
 const PADX = 88;
-const PADY = 40;
+const PADY = 38;
+const LABEL_H = 14;
+/** Ширина подписи 12px полужирным: в среднем 0,6 em на символ. */
+const labelW = (s: string) => s.length * 7.2 + 6;
+
+type Box = { x1: number; y1: number; x2: number; y2: number };
+const hit = (a: Box, b: Box) => a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2;
+
+/**
+ * Подписи городов: пробуем места над точкой, под ней, справа и слева и берём первое,
+ * которое не наезжает на уже поставленные подписи и чужие точки.
+ */
+function placeLabels(regions: FlowRegion[], pos: Map<string, { x: number; y: number }>) {
+  const dots: Box[] = regions.map((r) => { const p = pos.get(r.id)!; return { x1: p.x - 8, y1: p.y - 8, x2: p.x + 8, y2: p.y + 8 }; });
+  const placed: Box[] = [];
+  const out = new Map<string, { x: number; y: number; anchor: 'middle' | 'start' | 'end' }>();
+  regions.forEach((r, i) => {
+    const p = pos.get(r.id)!;
+    const w = labelW(r.city);
+    const above = { x: p.x, y: p.y - 14, anchor: 'middle' as const };
+    const below = { x: p.x, y: p.y + 24, anchor: 'middle' as const };
+    const options = [...(i % 2 ? [below, above] : [above, below]),
+      { x: p.x + 13, y: p.y + 4, anchor: 'start' as const }, { x: p.x - 13, y: p.y + 4, anchor: 'end' as const }];
+    const boxOf = (o: (typeof options)[number]): Box => {
+      const x1 = o.anchor === 'middle' ? o.x - w / 2 : o.anchor === 'start' ? o.x : o.x - w;
+      return { x1, y1: o.y - LABEL_H + 3, x2: x1 + w, y2: o.y + 3 };
+    };
+    const fits = (b: Box) => b.x1 >= 2 && b.x2 <= W - 2 && b.y1 >= 2 && b.y2 <= H - 2
+      && !placed.some((q) => hit(q, b)) && !dots.some((d, j) => j !== i && hit(d, b));
+    const best = options.find((o) => fits(boxOf(o))) ?? options[0];
+    placed.push(boxOf(best));
+    out.set(r.id, best);
+  });
+  return out;
+}
 
 export function RegionFlow({ regions, flows, label, hub = 'spb' }: { regions: FlowRegion[]; flows: Flow[]; label: string; hub?: string }) {
   const lons = regions.map((r) => r.lon);
-  const lats = regions.map((r) => r.lat);
+  // Петербург заметно севернее остальных городов: без поправки он висит один над пустой полосой.
+  // Поднимаем «потолок» широты чуть выше второго по северности города.
+  const rawLats = regions.map((r) => r.lat).sort((a, b) => b - a);
+  const cap = rawLats.length > 2 ? rawLats[1] + 0.8 : Infinity;
+  const latOf = (r: FlowRegion) => Math.min(r.lat, cap);
+  const lats = regions.map(latOf);
   const [minLon, maxLon] = [Math.min(...lons), Math.max(...lons)];
   const [minLat, maxLat] = [Math.min(...lats), Math.max(...lats)];
   const pos = new Map(regions.map((r) => [r.id, {
     x: PADX + ((r.lon - minLon) / (maxLon - minLon || 1)) * (W - PADX * 2),
-    y: PADY + ((maxLat - r.lat) / (maxLat - minLat || 1)) * (H - PADY * 2),
+    y: PADY + ((maxLat - latOf(r)) / (maxLat - minLat || 1)) * (H - PADY * 2),
   }]));
+  const labels = placeLabels(regions, pos);
   const active = new Set(flows.flatMap((f) => [f.fromId, f.toId]));
   const arcs = flows
     .map((f, i) => {
@@ -72,7 +112,7 @@ export function RegionFlow({ regions, flows, label, hub = 'spb' }: { regions: Fl
               {on ? <circle className="flow-halo" cx={p.x} cy={p.y} r={22} fill="url(#flow-glow)" /> : null}
               <circle className="flow-dot" cx={p.x} cy={p.y} r={isHub ? 7 : on ? 6 : 4} />
               {isHub ? <circle className="flow-ring" cx={p.x} cy={p.y} r={12} /> : null}
-              <text className="flow-lbl" x={p.x} y={p.y + (i % 2 ? 22 : -14)} textAnchor="middle">{r.city}</text>
+              <text className="flow-lbl" x={labels.get(r.id)!.x} y={labels.get(r.id)!.y} textAnchor={labels.get(r.id)!.anchor}>{r.city}</text>
             </g>
           );
         })}
