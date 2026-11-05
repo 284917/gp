@@ -31,6 +31,14 @@ export async function POST(request: Request) {
 
   const taskId = Number(fd.get('taskId')) || 0;
   const safeName = file.name.normalize('NFKD').replace(/[^\w.-]+/g, '_').replace(/^_+/, '').slice(-80) || 'file';
+  // только для записи демо-ролика на временной ветке: файлы на диске вместо Vercel Blob
+  if (process.env.DEMO_LOCAL_UPLOADS) {
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    const rel = `submissions/${user.id}/${taskId}/${Date.now()}-${safeName}`;
+    await mkdir(`/tmp/golos-uploads/submissions/${user.id}/${taskId}`, { recursive: true });
+    await writeFile(`/tmp/golos-uploads/${rel}`, Buffer.from(await file.arrayBuffer()));
+    return NextResponse.json({ url: `https://demo.private.blob.vercel-storage.com/${rel}`, name: file.name });
+  }
   try {
     const blob = await put(`submissions/${user.id}/${taskId}/${safeName}`, file, {
       access: blobAccess(),

@@ -24,6 +24,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     || (viewer.isCaptain && viewer.status === 'active' && viewer.regionId !== null && viewer.regionId === s.regionId);
   if (!allowed) return new NextResponse('Нет доступа', { status: 403 });
   if (!isPrivateBlob(s.fileUrl)) return NextResponse.redirect(s.fileUrl);
+  if (process.env.DEMO_LOCAL_UPLOADS && s.fileUrl.startsWith('https://demo.private.blob.vercel-storage.com/')) {
+    const { readFile } = await import('node:fs/promises');
+    const buf = await readFile(`/tmp/golos-uploads/${s.fileUrl.split('.com/')[1]}`);
+    const type = /\.png$/i.test(s.fileUrl) ? 'image/png' : 'image/jpeg';
+    return new NextResponse(new Uint8Array(buf), { headers: { 'Content-Type': type, 'Cache-Control': 'private, no-cache' } });
+  }
 
   const range = request.headers.get('range');
   const ifNoneMatch = range ? undefined : request.headers.get('if-none-match') ?? undefined;
