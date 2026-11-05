@@ -52,7 +52,7 @@ const firstLink = (sel, re) => async (p) => {
 };
 
 for (const [opts, pre] of [[DESK, 'd'], [MOB, 'm']]) {
-  await pages(opts, pre, null, [['/', 'landing'], ['/join', 'join'], ['/login', 'login'], ['/nope', '404']]);
+  await pages(opts, pre, null, [['/', 'landing'], ['/join', 'join'], ['/login', 'login'], ['/help?topic=access', 'help'], ['/nope', '404']]);
   await pages(opts, pre, 'alina@demo.golos', [
     ['/me', 'alina-home'], ['/me/tasks', 'alina-tasks'],
     [async (p) => { await p.goto(`${BASE}/me/tasks`); await firstLink('a.task')(p); }, 'alina-task'],
@@ -65,7 +65,7 @@ for (const [opts, pre] of [[DESK, 'd'], [MOB, 'm']]) {
   await pages(opts, pre, 'oleg@demo.golos', [['/me/review', 'captain-review']]);
   await pages(opts, pre, 'kurator1@demo.golos', [
     ['/curator', 'cur-overview'], ['/curator/initiatives', 'cur-initiatives'], ['/curator/moderation', 'cur-moderation'],
-    ['/curator/applications', 'cur-applications'], ['/curator/ambassadors', 'cur-ambassadors'],
+    ['/curator/applications', 'cur-applications'], ['/curator/questions', 'cur-questions'], ['/curator/ambassadors', 'cur-ambassadors'],
     [async (p) => { await p.goto(`${BASE}/curator/ambassadors`); await firstLink('a.rowlink')(p); }, 'cur-ambassador'],
     ['/curator/tasks', 'cur-tasks'], ['/curator/tasks/new', 'cur-task-new'], ['/curator/rewards', 'cur-rewards'],
     ['/curator/regions', 'cur-regions'], ['/curator/metrics', 'cur-metrics'], ['/curator/account', 'cur-account'],
