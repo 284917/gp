@@ -1,13 +1,15 @@
 [
   {
     "name": "01-landing",
-    "duration": 13.467,
-    "frames": 182,
+    "duration": 30.1,
+    "frames": 418,
     "marks": {
-      "who": 2.533,
-      "initiatives": 4.833,
-      "path": 7.833,
-      "perks": 10.733
+      "who": 2.333,
+      "initiatives": 5.5,
+      "regions": 10.233,
+      "path": 13.4,
+      "perks": 19.8,
+      "faq": 24.533
     }
   },
   {
