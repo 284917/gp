@@ -29,6 +29,7 @@ const manifest = ONLY.length ? JSON.parse(await (await import('node:fs/promises'
 const log = (...a) => console.log('[video]', ...a);
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const LAST = new WeakMap(); // где остался курсор на странице: следующая сцена продолжает с той же точки
 
 // ---------- курсор на странице ----------
 const CURSOR = `(() => {
@@ -109,7 +110,9 @@ class Scene {
     this.dir = `${TMP}/${name}`;
   }
   get doc() { return this.frame ?? this.page; }
-  async start(x = 980, y = 520) {
+  async start(x, y) {
+    const last = LAST.get(this.page);
+    if (x === undefined) ({ x, y } = last ?? { x: 980, y: 520 });
     await mkdir(this.dir, { recursive: true });
     await this.setCursor(x, y);
     log('сцена', this.name);
@@ -127,10 +130,12 @@ class Scene {
     this.cur = { x, y };
     await this.page.evaluate(([x, y, m]) => window.__cur && window.__cur(x, y, m), [x, y, this.touch ? 'touch' : 'arrow']).catch(() => {});
   }
-  async move(x, y, sec = 0.55) {
+  async move(x, y, sec) {
     const { x: x0, y: y0 } = this.cur;
     const dist = Math.hypot(x - x0, y - y0);
-    const n = Math.max(1, Math.round(Math.min(sec, 0.25 + dist / 1800) * FPS));
+    // спокойный темп: короткое движение ~0,5 с, через весь экран ~1,1 с
+    const dur = sec ?? Math.min(1.1, Math.max(0.5, 0.42 + dist / 1500));
+    const n = Math.max(1, Math.round(dur * FPS));
     for (let i = 1; i <= n; i++) {
       const k = ease(i / n);
       await this.setCursor(x0 + (x - x0) * k, y0 + (y - y0) * k);
@@ -148,9 +153,9 @@ class Scene {
     if (r.top >= top && r.bottom <= vh - bottom) return;
     const y0 = await this.doc.evaluate(() => window.scrollY);
     const target = Math.max(0, y0 + r.top - Math.max(top, (vh - (r.bottom - r.top)) * 0.38));
-    await this.scrollTo(target, 0.55);
+    await this.scrollTo(target, 0.8);
   }
-  async scrollTo(y, sec = 1) {
+  async scrollTo(y, sec = 1.3) {
     const y0 = await this.doc.evaluate(() => window.scrollY);
     const max = await this.doc.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
     const y1 = Math.max(0, Math.min(max, y));
@@ -161,11 +166,11 @@ class Scene {
       await this.shot();
     }
   }
-  async scrollToEl(locator, offset = 90, sec = 1) {
+  async scrollToEl(locator, offset = 90, sec = 1.3) {
     const y = await locator.evaluate((e, off) => e.getBoundingClientRect().top + window.scrollY - off, offset);
     await this.scrollTo(y, sec);
   }
-  async point(locator, { sec = 0.55, dx = 0.5, dy = 0.5 } = {}) {
+  async point(locator, { sec, dx = 0.5, dy = 0.5 } = {}) {
     if (!(await locator.count())) { log('нет элемента для курсора в сцене', this.name); return; }
     await this.ensureVisible(locator);
     const b = await this.box(locator);
@@ -178,27 +183,59 @@ class Scene {
       if (i < 6) await this.shot();
     }
   }
-  async click(locator, { sec, dx, dy, wait } = {}) {
+  async click(locator, { sec, dx, dy, wait, fade = false, after = 0.25 } = {}) {
     await this.point(locator, { sec, dx, dy });
+    await this.shot(0.12);
     await this.ripple();
+    const before = fade ? await this.page.screenshot({ type: 'jpeg', quality: 92 }) : null;
     if (wait) await Promise.all([wait(), locator.click()]);
     else await locator.click();
     await settle(this.page);
     await this.setCursor(this.cur.x, this.cur.y);
+    if (before) await this.fadeFrom(before);
+    if (after) await this.shot(after);
   }
-  async type(locator, text, { cps = 48, clear = false } = {}) {
-    await this.click(locator, { sec: 0.45 });
-    if (clear) { await locator.fill(''); await this.shot(); }
+  /** Плавный переход: прежний кадр лежит поверх новой страницы и растворяется. */
+  async fadeFrom(buf, sec = 0.5) {
+    const src = 'data:image/jpeg;base64,' + buf.toString('base64');
+    await this.page.evaluate((src) => new Promise((done) => {
+      const i = document.createElement('img');
+      i.id = 'rec-fade';
+      i.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:2147483645;pointer-events:none';
+      i.onload = () => done();
+      i.onerror = () => done();
+      i.src = src;
+      document.documentElement.appendChild(i);
+    }), src);
+    const n = Math.round(sec * FPS);
+    for (let k = 1; k <= n; k++) {
+      await this.page.evaluate((o) => { const i = document.getElementById('rec-fade'); if (i) i.style.opacity = String(o); }, 1 - ease(k / n));
+      await this.shot();
+    }
+    await this.page.evaluate(() => document.getElementById('rec-fade')?.remove());
+  }
+  /** Переход по адресу внутри сцены — тоже через растворение. */
+  async goto(target, url) {
+    const before = await this.page.screenshot({ type: 'jpeg', quality: 92 });
+    await target.goto(url);
+    await settle(this.page);
+    await this.setCursor(this.cur.x, this.cur.y);
+    await this.fadeFrom(before);
+  }
+  async type(locator, text, { cps = 22, clear = false } = {}) {
+    await this.click(locator, { after: 0 });
+    if (clear) { await locator.fill(''); await this.shot(0.15); }
     const per = Math.max(1, Math.round(cps / FPS));
     for (let i = 0; i < text.length; i += per) {
       await this.page.keyboard.type(text.slice(i, i + per));
-      await this.shot();
+      await this.shot(per / cps);
     }
+    await this.shot(0.3);
   }
   async select(locator, value) {
-    await this.click(locator, { sec: 0.45 });
+    await this.click(locator, { after: 0 });
     await locator.selectOption(value);
-    await this.shot(0.25);
+    await this.shot(0.5);
   }
   async zoom(locator, scale = 1.3, sec = 0.7) {
     const b = await locator.evaluate((e) => { const r = e.getBoundingClientRect(); return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 }; });
@@ -225,6 +262,7 @@ class Scene {
     if (at >= 0) manifest[at] = entry; else manifest.push(entry);
     await writeFile(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2));
     await rm(this.dir, { recursive: true, force: true });
+    LAST.set(this.page, this.cur);
     log('готово', this.name, this.t.toFixed(1), 'с');
   }
 }
@@ -243,80 +281,58 @@ const danCtx = await context();
 const pD = await danCtx.newPage();
 await login(pD, 'daniil@demo.golos');
 
-// 1. Программа: главная страница целиком
+// 1. Программа: главная, только главное (≈18 с)
 await run('landing', async () => {
   await pA.goto(BASE);
   await settle(pA);
   const s = await scene('01-landing', pA).start(1010, 610);
-  await s.hold(1.3);
-  await s.move(1120, 470, 0.8);
-  await s.hold(0.7);
-  s.mark('who');
-  await s.scrollToEl(pA.locator('#who'), 80, 1.0);
-  await s.move(560, 560, 0.6);
-  await s.hold(1.6);
-  s.mark('initiatives');
-  await s.scrollToEl(pA.locator('#initiatives'), 80, 1.0);
-  await s.move(720, 540, 0.5);
-  await s.hold(1.3);
-  await s.scrollToEl(pA.locator('section.tagline'), 120, 0.9);
-  await s.hold(1.2);
-  s.mark('regions');
-  await s.scrollToEl(pA.locator('.landing-flow'), 90, 1.0);
-  await s.move(900, 560, 0.6);
-  await s.hold(1.8);
-  s.mark('path');
-  await s.scrollToEl(pA.locator('#path'), 70, 1.0);
-  await s.move(950, 520, 0.5);
-  await s.hold(1.3);
-  await s.scrollToEl(pA.locator('#path .card').last(), 160, 0.8);
-  await s.hold(1.0);
-  await s.scrollToEl(pA.locator('ol.how'), 220, 0.8);
-  await s.hold(1.2);
-  s.mark('perks');
-  await s.scrollToEl(pA.locator('#perks'), 70, 0.9);
-  await s.move(820, 560, 0.5);
-  await s.hold(1.3);
-  await s.scrollToEl(pA.locator('section', { hasText: 'Четыре куратора на всю страну' }).first(), 140, 0.9);
-  await s.hold(1.3);
-  s.mark('faq');
-  await s.scrollToEl(pA.locator('#faq'), 70, 0.9);
-  await s.click(pA.locator('#faq summary', { hasText: 'Даёт ли программа' }));
   await s.hold(1.4);
-  await s.scrollToEl(pA.locator('.cta-band'), 260, 0.9);
-  await s.point(pA.locator('.cta-band a.btn'));
-  await s.hold(1.2);
+  await s.move(1120, 470);
+  await s.hold(0.6);
+  s.mark('initiatives');
+  await s.scrollToEl(pA.locator('#initiatives'), 80, 1.4);
+  await s.move(720, 540);
+  await s.hold(1.8);
+  s.mark('regions');
+  await s.scrollToEl(pA.locator('.landing-flow'), 90, 1.4);
+  await s.move(900, 560);
+  await s.hold(2.2);
+  s.mark('path');
+  await s.scrollToEl(pA.locator('#path'), 70, 1.4);
+  await s.move(950, 520);
+  await s.hold(2.0);
+  s.mark('perks');
+  await s.scrollToEl(pA.locator('#perks'), 70, 1.4);
+  await s.move(820, 560);
+  await s.hold(1.8);
   await s.end();
 });
-if (ONLY.length && ONLY.every((n) => n === '01-landing')) {
-  await browser.close();
-  await sql.end();
-  process.exit(process.exitCode ?? 0);
-}
 
 // 2. Заявка
 await run('join', async () => {
-  const s = await scene('02-join', pA).start(820, 600);
-  await s.click(pA.locator('.site-head a.btn.primary'), { wait: () => pA.waitForURL(/\/join/) });
-  await s.hold(0.7);
+  const s = await scene('02-join', pA).start();
+  await s.hold(0.3);
+  await s.click(pA.locator('.site-head a.btn.primary'), { wait: () => pA.waitForURL(/\/join/), fade: true });
+  await s.hold(0.8);
   s.mark('role');
   await s.click(pA.locator('label.seg-card', { hasText: 'АЗС и нефтебаза' }));
+  await s.hold(0.4);
   s.mark('fields');
-  await s.type(pA.locator('#name'), MARINA.name);
+  await s.type(pA.locator('#name'), MARINA.name, { cps: 18 });
   await s.select(pA.locator('#region'), 'omsk');
-  await s.type(pA.locator('#org'), 'АЗС № 118');
-  await s.type(pA.locator('#position'), 'Оператор АЗС');
-  await s.type(pA.locator('#email'), MARINA.email, { cps: 60 });
-  await s.type(pA.locator('#password'), PW, { cps: 60 });
+  await s.type(pA.locator('#org'), 'АЗС № 118', { cps: 16 });
+  await s.type(pA.locator('#position'), 'Оператор АЗС', { cps: 18 });
+  await s.type(pA.locator('#email'), MARINA.email, { cps: 28 });
+  await s.type(pA.locator('#password'), PW, { cps: 24 });
   s.mark('motivation');
-  await s.type(pA.locator('#motivation'), 'Хочу показать студентам, что работа на АЗС — это люди, сервис и команда.', { cps: 75 });
+  await s.type(pA.locator('#motivation'), 'Хочу показать студентам, как устроена работа на АЗС.', { cps: 28 });
+  await s.hold(0.5);
   await s.click(pA.locator('input[name="consent"]'));
   s.mark('submit');
-  await s.click(pA.locator('button[type="submit"]:has-text("Отправить заявку")'), { wait: () => pA.waitForURL(/\/status/) });
+  await s.click(pA.locator('button[type="submit"]:has-text("Отправить заявку")'), { wait: () => pA.waitForURL(/\/status/), fade: true });
   await pA.getByText('Заявка на рассмотрении').waitFor();
-  await settle(pA);
-  await s.move(760, 330, 0.5);
-  await s.hold(1.6);
+  await s.move(760, 330);
+  await s.hold(1.8);
   await s.end();
 });
 
@@ -325,12 +341,12 @@ await run('approve', async () => {
   await pC.goto(`${BASE}/curator/applications`);
   await settle(pC);
   const s = await scene('03-approve', pC).start(900, 300);
-  await s.hold(0.8);
+  await s.hold(1.0);
   const card = pC.locator('article.mod', { hasText: MARINA.name });
   await s.point(card, { dy: 0.3 });
-  await s.hold(0.7);
-  await s.click(card.getByRole('button', { name: 'Принять в программу' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await s.hold(1.8);
+  await s.hold(1.4);
+  await s.click(card.getByRole('button', { name: 'Принять в программу' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }), fade: true });
+  await s.hold(1.4);
   await s.end();
 });
 
@@ -344,37 +360,33 @@ await run('cabinet', async () => {
   await pA.goto(`${BASE}/me`);
   await settle(pA);
   const s = await scene('04-cabinet', pA).start(760, 330);
-  await s.hold(1.0);
+  await s.hold(1.4);
   s.mark('level');
   await s.point(pA.locator('section.level'), { dx: 0.5, dy: 0.55 });
-  await s.hold(1.3);
+  await s.hold(2.0);
   s.mark('week');
   await s.point(pA.locator('a.task').first(), { dx: 0.3 });
-  await s.hold(1.0);
+  await s.hold(1.6);
   s.mark('tandem');
   await s.point(pA.locator('section.card', { hasText: 'Мой тандем' }), { dx: 0.4, dy: 0.45 });
-  await s.hold(1.4);
+  await s.hold(2.0);
   await s.end();
 });
 
-// 5. Задания: у сотрудника и у студента свои
+// 5. Задания: у сотрудника свои, у студента — свои (коротко)
 await run('tasks', async () => {
-  const s = await scene('05-tasks', pA).start(900, 300);
-  await s.click(pA.locator('.amb-nav a', { hasText: 'Задания' }), { wait: () => pA.waitForURL(/\/me\/tasks$/) });
-  await s.hold(0.8);
+  const s = await scene('05-tasks', pA).start();
+  await s.click(pA.locator('.amb-nav a', { hasText: 'Задания' }), { wait: () => pA.waitForURL(/\/me\/tasks$/), fade: true });
+  await s.hold(0.6);
   const tasks = pA.locator('a.task');
-  const count = Math.min(4, await tasks.count());
-  for (let i = 0; i < count; i++) { await s.point(tasks.nth(i), { dx: 0.35, sec: 0.45 }); await s.hold(0.45); }
+  const count = Math.min(3, await tasks.count());
+  for (let i = 0; i < count; i++) { await s.point(tasks.nth(i), { dx: 0.35 }); await s.hold(0.8); }
   await s.end();
   await pD.goto(`${BASE}/me/tasks`);
   await settle(pD);
-  const d = await scene('05b-tasks-student', pD).start(700, 300);
-  await d.hold(0.6);
-  const dt = pD.locator('a.task');
-  await d.point(dt.first(), { dx: 0.35 });
-  await d.hold(0.7);
-  await d.point(dt.nth(1), { dx: 0.35 });
-  await d.hold(1.8);
+  const d = await scene('05b-tasks-student', pD).start(820, 420);
+  await d.point(pD.locator('a.task').first(), { dx: 0.35 });
+  await d.hold(1.5);
   await d.end();
 });
 
@@ -386,32 +398,35 @@ await run('phone', async () => {
   await frame.goto(`${BASE}/me/tasks`);
   await settle(pS);
   const s = await scene('06-phone-task', pS, { frame, touch: true }).start(1100, 500);
-  await s.hold(1.0);
-  await s.click(frame.locator('a.task', { hasText: 'Кадр смены' }), { wait: () => frame.waitForURL(/\/me\/tasks\/\d+/) });
+  await s.hold(1.2);
+  await s.click(frame.locator('a.task', { hasText: 'Кадр смены' }), { wait: () => frame.waitForURL(/\/me\/tasks\/\d+/), fade: true });
   await settle(pS);
-  await s.hold(1.0);
+  await s.hold(1.2);
   s.mark('steps');
-  await s.scrollTo(260, 0.9);
-  await s.hold(1.4);
+  await s.scrollTo(260, 1.4);
+  await s.hold(2.0);
   s.mark('upload');
   const drop = frame.locator('label.drop');
   await s.point(drop);
+  await s.shot(0.15);
   await s.ripple();
+  const before = await pS.screenshot({ type: 'jpeg', quality: 92 });
   await frame.locator('input[type="file"]').setInputFiles(PHOTO);
-  for (let i = 0; i < 40; i++) {
-    await s.shot();
+  for (let i = 0; i < 60; i++) {
     if (await frame.locator('label.drop.has').count()) break;
-    await sleep(60);
+    await sleep(80);
   }
-  await s.hold(0.6);
+  await settle(pS);
+  await s.fadeFrom(before, 0.45);
+  await s.hold(1.2);
   s.mark('text');
   await s.click(frame.locator('.submit-box .tabs button', { hasText: 'Текст' }));
-  await s.type(frame.locator('#body'), 'Утренняя смена на АЗС № 118: встречаем первых гостей.', { cps: 55 });
+  await s.type(frame.locator('#body'), 'Утро на АЗС № 118: встречаем первых гостей.', { cps: 24 });
+  await s.hold(0.6);
   s.mark('send');
-  await s.click(frame.locator('button[type="submit"]:has-text("Отправить на проверку")'), { wait: () => frame.waitForURL(/sent=1/) });
+  await s.click(frame.locator('button[type="submit"]:has-text("Отправить на проверку")'), { wait: () => frame.waitForURL(/sent=1/), fade: true });
   await frame.getByText('Задание отправлено').first().waitFor();
-  await settle(pS);
-  await s.hold(1.6);
+  await s.hold(2.0);
   await s.end();
   await pS.close();
 });
@@ -423,17 +438,19 @@ await run('moderation', async () => {
   const s = await scene('07-moderation', pC).start(900, 300);
   const card = pC.locator('article.mod', { hasText: MARINA.name });
   await s.ensureVisible(card, { top: 90, bottom: 40 });
+  await s.hold(0.6);
   await s.point(card.locator('.media-prev'), { dy: 0.5 });
-  await s.hold(1.4);
-  await s.click(card.getByRole('button', { name: 'Принять' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
+  await s.hold(2.0);
+  await s.click(card.getByRole('button', { name: 'Принять' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }), fade: true });
   await s.hold(1.0);
   await s.end();
   await pA.goto(`${BASE}/me`);
   await settle(pA);
   const m = await scene('07b-points', pA).start(700, 300);
+  await m.hold(0.4);
   await m.point(pA.locator('section.level .level-top'), { dx: 0.85 });
-  await m.zoom(pA.locator('section.level'), 1.18, 0.6);
-  await m.hold(2.4);
+  await m.zoom(pA.locator('section.level'), 1.18, 0.9);
+  await m.hold(2.6);
   await m.unzoom();
   await m.end();
 });
@@ -441,57 +458,46 @@ await run('moderation', async () => {
 // время идёт: два месяца заданий
 await sql`update users set points = 640 where id = ${marina.id}`;
 
-// 8. Награды
+// 8. Награды (заказ участника; выдачу куратором не показываем)
 await run('rewards', async () => {
   await pA.goto(`${BASE}/me`);
   await settle(pA);
   const s = await scene('08-rewards', pA).start(700, 300);
+  await s.hold(0.5);
   await s.point(pA.locator('section.level p').last(), { dx: 0.4 });
-  await s.hold(1.8);
+  await s.hold(2.0);
   s.mark('catalog');
-  await s.click(pA.locator('.amb-nav a', { hasText: 'Награды' }), { wait: () => pA.waitForURL(/\/me\/rewards/) });
-  await s.hold(0.9);
-  await s.point(pA.locator('.status-card'), { dx: 0.3, dy: 0.4 });
-  await s.hold(0.9);
-  await s.scrollToEl(pA.locator('.grid-2').last(), 140, 0.9);
+  await s.click(pA.locator('.amb-nav a', { hasText: 'Награды' }), { wait: () => pA.waitForURL(/\/me\/rewards/), fade: true });
   await s.hold(1.0);
+  await s.point(pA.locator('.status-card'), { dx: 0.3, dy: 0.4 });
+  await s.hold(1.6);
+  await s.scrollToEl(pA.locator('.grid-2').last(), 140, 1.4);
+  await s.hold(1.4);
   s.mark('order');
   const hoodie = pA.locator('.rw', { hasText: 'Худи' });
-  await s.click(hoodie.locator('summary'));
-  await s.hold(0.4);
-  await s.click(hoodie.locator('button[type="submit"]'), { wait: () => pA.waitForURL(/ok=/) });
-  await settle(pA);
-  await s.hold(1.4);
+  await s.click(hoodie.locator('summary'), { fade: true });
+  await s.hold(1.0);
+  await s.click(hoodie.locator('button[type="submit"]'), { wait: () => pA.waitForURL(/ok=/), fade: true });
+  await s.hold(2.0);
   await s.end();
-  await pC.goto(`${BASE}/curator/rewards`);
-  await settle(pC);
-  const c = await scene('08b-rewards-curator', pC).start(900, 300);
-  const card = pC.locator('article.mod', { hasText: MARINA.name });
-  await c.point(card, { dy: 0.35 });
-  await c.hold(0.6);
-  await c.click(card.getByRole('button', { name: 'Выдано' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await c.hold(1.4);
-  await c.end();
 });
 
-// 9. Контент-кит
+// 9. Контент-кит и личная ссылка
 await run('kit', async () => {
   await pA.goto(`${BASE}/me/kit`);
   await settle(pA);
   const s = await scene('09-kit', pA).start(800, 300);
-  await s.hold(0.7);
+  await s.hold(1.0);
+  s.mark('builder');
+  await s.type(pA.locator('#k-what'), 'В метель у водителя сел аккумулятор — помогли завести машину и напоили чаем.', { cps: 34, clear: true });
+  await s.point(pA.locator('pre.kit-out'), { dx: 0.5, dy: 0.5 });
+  await s.hold(2.2);
   s.mark('link');
   await s.click(pA.locator('.my-link .tabs button', { hasText: 'VK' }));
   await s.point(pA.locator('.link-row input'), { dx: 0.55 });
-  await s.hold(0.6);
+  await s.hold(1.6);
   await s.click(pA.locator('.link-row button'));
-  await s.hold(0.8);
-  s.mark('builder');
-  await s.type(pA.locator('#k-what'), 'В метель у водителя сел аккумулятор — помогли завести машину и напоили чаем.', { cps: 80, clear: true });
-  await s.point(pA.locator('pre.kit-out'), { dx: 0.5, dy: 0.5 });
-  await s.hold(1.2);
-  await s.click(pA.locator('section.card button', { hasText: 'Скопировать' }).last());
-  await s.hold(0.8);
+  await s.hold(1.6);
   await s.end();
 });
 
@@ -501,103 +507,103 @@ await run('ini-propose', async () => {
   await pD.goto(`${BASE}/me/initiatives`);
   await settle(pD);
   const s = await scene('10-ini-propose', pD).start(900, 300);
-  await s.hold(1.0);
-  await s.click(pD.locator('a.btn', { hasText: 'Предложить инициативу' }).first(), { wait: () => pD.waitForURL(/\/me\/initiatives\/new/) });
-  await s.hold(0.6);
+  await s.hold(1.4);
+  await s.click(pD.locator('a.btn', { hasText: 'Предложить инициативу' }).first(), { wait: () => pD.waitForURL(/\/me\/initiatives\/new/), fade: true });
+  await s.hold(0.8);
   s.mark('form');
-  await s.type(pD.locator('#i-title'), INI, { cps: 60 });
+  await s.type(pD.locator('#i-title'), INI, { cps: 26 });
   await s.select(pD.locator('#i-format'), 'excursion');
-  await s.type(pD.locator('#i-sum'), 'Покажем первокурсникам, как устроена смена на АЗС: экскурсия, разговор с оператором и вопросы о практике.', { cps: 95 });
-  await s.type(pD.locator('#i-aud'), 'Первый курс нефтяного колледжа', { cps: 70 });
+  await s.type(pD.locator('#i-sum'), 'Покажем первокурсникам смену на АЗС: экскурсия и разговор с оператором.', { cps: 38 });
+  await s.type(pD.locator('#i-aud'), 'Первый курс нефтяного колледжа', { cps: 30 });
+  s.mark('who');
   await s.click(pD.locator('label.seg-toggle', { hasText: 'АЗС и нефтебаза' }));
   await s.click(pD.locator('label.seg-toggle', { hasText: 'Студент колледжа' }));
-  await s.type(pD.locator('#i-roles'), 'Оператор ведёт экскурсию, студенты снимают ролик', { cps: 80 });
-  await s.type(pD.locator('#i-goal'), 'Экскурсия для 20 студентов, ролик на минуту и инструкция для других регионов', { cps: 95 });
+  await s.hold(0.6);
+  await s.type(pD.locator('#i-roles'), 'Оператор ведёт экскурсию, студенты снимают ролик', { cps: 34 });
+  await s.type(pD.locator('#i-goal'), 'Экскурсия для 20 студентов и ролик на минуту', { cps: 34 });
   await s.click(pD.locator('label.checkbox', { hasText: 'Будем снимать' }));
+  await s.hold(0.6);
   s.mark('submit');
-  await s.click(pD.locator('button[type="submit"]:has-text("Отправить на согласование")'), { wait: () => pD.waitForURL(/\/me\/initiatives\/\d+\?created=1/) });
+  await s.click(pD.locator('button[type="submit"]:has-text("Отправить на согласование")'), { wait: () => pD.waitForURL(/\/me\/initiatives\/\d+\?created=1/), fade: true });
   iniUrl = pD.url().split('?')[0];
-  await settle(pD);
-  await s.hold(1.4);
+  await s.hold(2.0);
   await s.end();
 });
 
-// 11. Куратор согласует, Марина вступает в команду, автор собирает команду
-await run('ini-team', async () => {
+// куратор согласует (за кадром)
+await run('ini-approve', async () => {
   await pC.goto(`${BASE}/curator/initiatives`);
   await settle(pC);
-  const c = await scene('11-ini-approve', pC).start(900, 300);
   const card = pC.locator('article.mod', { hasText: INI });
-  await c.ensureVisible(card, { top: 90, bottom: 40 });
-  await c.point(card, { dy: 0.3 });
-  await c.hold(0.7);
-  await c.click(card.getByRole('button', { name: 'Согласовать' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await c.hold(1.3);
-  await c.end();
+  await Promise.all([card.waitFor({ state: 'detached', timeout: 15000 }), card.getByRole('button', { name: 'Согласовать' }).click()]);
+});
 
+// 11. Марина находит инициативу на бирже и вступает в команду
+await run('ini-join', async () => {
   await pA.goto(`${BASE}/me/initiatives`);
   await settle(pA);
   const m = await scene('12-ini-join', pA).start(900, 300);
+  await m.hold(1.0);
   const tile = pA.locator('a.itile', { hasText: INI });
   await m.point(tile);
-  await m.hold(0.6);
-  await m.click(tile, { wait: () => pA.waitForURL(/\/me\/initiatives\/\d+$/) });
-  await m.hold(0.8);
-  await m.type(pA.locator('#j-note'), 'Шесть лет работаю оператором — проведу экскурсию и покажу смену.', { cps: 85 });
-  await m.click(pA.locator('button[type="submit"]:has-text("Хочу в команду")'));
+  await m.hold(1.4);
+  await m.click(tile, { wait: () => pA.waitForURL(/\/me\/initiatives\/\d+$/), fade: true });
+  await m.hold(1.4);
+  s_mark(m, 'note');
+  await m.type(pA.locator('#j-note'), 'Шесть лет работаю оператором — проведу экскурсию и покажу смену.', { cps: 30 });
+  await m.hold(0.5);
+  await m.click(pA.locator('button[type="submit"]:has-text("Хочу в команду")'), { fade: true });
   await pA.getByText('Отклик отправлен').first().waitFor();
-  await m.hold(1.1);
+  await m.hold(1.8);
   await m.end();
 
   await pD.goto(iniUrl);
   await settle(pD);
-  const d = await scene('13-ini-run', pD).start(900, 300);
+  const d = await scene('13-ini-accept', pD).start(900, 300);
   const req = pD.locator('li.request', { hasText: MARINA.name });
   await d.ensureVisible(req);
+  await d.hold(0.6);
   await d.point(req, { dx: 0.3 });
-  await d.hold(0.5);
-  await d.click(req.getByRole('button', { name: 'Принять' }), { wait: () => req.waitFor({ state: 'detached', timeout: 15000 }) });
-  await d.click(pD.locator('button[type="submit"]:has-text("Команда собрана, начинаем")'));
-  await pD.locator('#r-res').waitFor();
-  await settle(pD);
-  await d.hold(0.5);
-  d.mark('report');
-  await d.type(pD.locator('#r-res'), 'Провели экскурсию для 22 первокурсников, сняли ролик со сменой и ответили на вопросы о практике.', { cps: 110 });
-  await pD.fill('#r-play', '1. Согласовать время с руководителем АЗС\n2. Собрать вопросы студентов заранее\n3. Снимать только в разрешённой зоне\n4. Показать ролик на классном часе');
-  await d.shot(0.3);
-  await d.type(pD.locator('#r-aud'), '22', { cps: 30 });
-  await d.type(pD.locator('#r-reach'), '1850', { cps: 40 });
-  await d.type(pD.locator('#r-score'), '4,8', { cps: 30 });
-  await d.click(pD.locator('button[type="submit"]:has-text("Отправить итоги куратору")'));
-  await pD.getByText('Итоги у куратора').first().waitFor();
-  await settle(pD);
-  await d.hold(0.9);
+  await d.hold(1.4);
+  await d.click(req.getByRole('button', { name: 'Принять' }), { wait: () => req.waitFor({ state: 'detached', timeout: 15000 }), fade: true });
+  await d.hold(2.0);
   await d.end();
 });
+function s_mark(sc, k) { sc.mark(k); }
 
-// 12. Итоги приняты: баллы команде и новый уровень Марины
+// три недели спустя: проект проведён, итоги приняты (за кадром)
 await run('ini-done', async () => {
+  await pD.goto(iniUrl);
+  await settle(pD);
+  await pD.locator('button[type="submit"]:has-text("Команда собрана, начинаем")').click();
+  await pD.locator('#r-res').waitFor();
+  await pD.fill('#r-res', 'Провели экскурсию для 22 первокурсников, сняли ролик со сменой и ответили на вопросы о практике.');
+  await pD.fill('#r-play', '1. Согласовать время с руководителем АЗС\n2. Собрать вопросы студентов заранее\n3. Снимать только в разрешённой зоне\n4. Показать ролик на классном часе');
+  await pD.fill('#r-aud', '22');
+  await pD.fill('#r-reach', '1850');
+  await pD.fill('#r-score', '4,8');
+  await pD.locator('button[type="submit"]:has-text("Отправить итоги куратору")').click();
+  await pD.getByText('Итоги у куратора').first().waitFor();
   await pC.goto(`${BASE}/curator/initiatives`);
   await settle(pC);
-  const c = await scene('14-ini-done', pC).start(900, 300);
   const card = pC.locator('article.mod', { hasText: INI });
-  await c.ensureVisible(card, { top: 90, bottom: 40 });
-  await c.point(card, { dy: 0.4 });
-  await c.hold(0.9);
-  await c.click(card.getByRole('button', { name: 'Принять и начислить баллы' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await c.hold(1.3);
-  await c.end();
+  await Promise.all([card.waitFor({ state: 'detached', timeout: 15000 }), card.getByRole('button', { name: 'Принять и начислить баллы' }).click()]);
+});
 
+// 12. Проект завершён: страница инициативы и новый уровень Марины
+await run('level-up', async () => {
   await pA.goto(iniUrl);
   await settle(pA);
   const m = await scene('15-level-up', pA).start(900, 300);
-  await m.hold(1.6);
-  await pA.goto(`${BASE}/me`);
-  await settle(pA);
-  await m.setCursor(700, 300);
+  await m.hold(1.2);
+  const done = pA.getByText('Проект завершён').first();
+  if (await done.count()) { await m.point(done, { dx: 0.4 }); }
+  await m.hold(2.2);
+  await m.goto(pA, `${BASE}/me`);
+  await m.hold(0.4);
   await m.point(pA.locator('section.level .lvl-name'), { dx: 0.3 });
-  await m.zoom(pA.locator('section.level'), 1.2, 0.6);
-  await m.hold(1.8);
+  await m.zoom(pA.locator('section.level'), 1.2, 0.9);
+  await m.hold(2.4);
   await m.unzoom();
   await m.end();
 });
@@ -615,12 +621,12 @@ await run('library', async () => {
   await pA.goto(`${BASE}/me/formats`);
   await settle(pA);
   const s = await scene('16-library', pA).start(700, 300);
-  await s.hold(0.8);
+  await s.hold(1.2);
   const flow = pA.locator('.flow-card');
-  if (await flow.count()) { await s.ensureVisible(flow, { top: 80, bottom: 20 }); await s.point(flow, { dx: 0.6, dy: 0.55 }); await s.hold(1.8); }
+  if (await flow.count()) { await s.ensureVisible(flow, { top: 80, bottom: 20 }); await s.point(flow, { dx: 0.6, dy: 0.55 }); await s.hold(2.6); }
   const tile = pA.locator('a.itile', { hasText: INI }).first();
   await s.point(tile, { dy: 0.4 });
-  await s.hold(1.6);
+  await s.hold(2.2);
   await s.end();
 });
 
@@ -629,19 +635,19 @@ await run('curator', async () => {
   await pC.goto(`${BASE}/curator`);
   await settle(pC);
   const s = await scene('17-curator', pC).start(900, 260);
-  await s.hold(1.4);
-  await s.point(pC.locator('.attention a').first(), { sec: 0.5 });
-  await s.hold(0.7);
-  s.mark('community');
-  await s.scrollToEl(pC.locator('section.community'), 24, 1.1);
-  await s.move(900, 420, 0.5);
-  await s.hold(2.0);
-  s.mark('kpis');
-  await s.scrollToEl(pC.locator('.kpis').first(), 24, 1.1);
   await s.hold(1.6);
+  await s.point(pC.locator('.attention a').first());
+  await s.hold(1.4);
+  s.mark('community');
+  await s.scrollToEl(pC.locator('section.community'), 24, 1.5);
+  await s.move(900, 420);
+  await s.hold(2.4);
+  s.mark('kpis');
+  await s.scrollToEl(pC.locator('.kpis').first(), 24, 1.5);
+  await s.hold(2.2);
   s.mark('funnel');
-  await s.scrollToEl(pC.locator('section.card', { hasText: 'От публикации до найма' }), 24, 1.0);
-  await s.hold(1.8);
+  await s.scrollToEl(pC.locator('section.card', { hasText: 'От публикации до найма' }), 24, 1.4);
+  await s.hold(2.4);
   await s.end();
 });
 

@@ -30,7 +30,6 @@ jobs:
       NEXT_TELEMETRY_DISABLED: '1'
       BLOB_STORE_ID: demo
       DEMO_LOCAL_UPLOADS: '1'
-      SCENES: 01-landing
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
