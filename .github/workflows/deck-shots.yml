@@ -30,6 +30,7 @@ jobs:
       NEXT_TELEMETRY_DISABLED: '1'
       BLOB_STORE_ID: demo
       DEMO_LOCAL_UPLOADS: '1'
+      CAREER_ONLY: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,7 +56,10 @@ jobs:
         run: |
           npx next start > server.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:3000/api/health && break; sleep 1; done
-      - run: node scripts/video/record.mjs
+      - run: if [ -z "$CAREER_ONLY" ]; then node scripts/video/record.mjs; fi
+      - run: node scripts/video/career.mjs
+        continue-on-error: true
+        timeout-minutes: 5
       - if: always()
         run: tail -n 60 server.log || true
       - name: Commit clips
