@@ -36,7 +36,18 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: ffmpeg
+        timeout-minutes: 8
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            for i in 1 2 3; do
+              sudo -E apt-get update -qq && sudo -E apt-get install -y -qq --no-install-recommends ffmpeg && break
+              sleep 10
+            done
+          fi
+          ffmpeg -version | head -1
       - run: node scripts/migrate.mjs
       - run: node scripts/deck/seed.mjs
       - run: npx next build
