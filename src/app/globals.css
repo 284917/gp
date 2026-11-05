@@ -440,6 +440,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
   .cur-shell { grid-template-columns: minmax(0, 1fr); }
   .cur-side { position: sticky; top: 0; z-index: 20; height: auto; flex-direction: row; align-items: center; gap: 8px; padding: 10px var(--gut-r) 10px var(--gut); border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: visible; scrollbar-width: none; }
   .cur-side .brand-name, .cur-user { display: none; }
+  .cur-side > * { flex-shrink: 0; }
   .cur-nav { display: flex; gap: 2px; }
   .cur-nav a { white-space: nowrap; padding: 8px 10px; }
   .cur-nav a .ic { display: none; }
