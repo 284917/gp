@@ -1,158 +1,139 @@
 [
   {
     "name": "01-landing",
-    "duration": 30.1,
-    "frames": 418,
+    "duration": 18.167,
+    "frames": 257,
     "marks": {
-      "who": 2.333,
-      "initiatives": 5.5,
-      "regions": 10.233,
-      "path": 13.4,
-      "perks": 19.8,
-      "faq": 24.533
+      "initiatives": 2.533,
+      "regions": 6.433,
+      "path": 10.567,
+      "perks": 14.467
     }
   },
   {
     "name": "02-join",
-    "duration": 12.917,
-    "frames": 314,
+    "duration": 25.788,
+    "frames": 515,
     "marks": {
-      "role": 2.033,
-      "fields": 2.567,
-      "motivation": 7.683,
-      "submit": 10.183
+      "role": 3.837,
+      "fields": 5.34,
+      "motivation": 16.038,
+      "submit": 21.518
     }
   },
   {
     "name": "03-approve",
-    "duration": 4.2,
-    "frames": 30,
+    "duration": 5.97,
+    "frames": 59,
     "marks": {}
   },
   {
     "name": "04-cabinet",
-    "duration": 6.067,
-    "frames": 45,
+    "duration": 9.067,
+    "frames": 66,
     "marks": {
-      "level": 1,
-      "week": 2.7,
-      "tandem": 4.1
+      "level": 1.4,
+      "week": 4,
+      "tandem": 6.2
     }
   },
   {
     "name": "05-tasks",
-    "duration": 5.7,
-    "frames": 98,
+    "duration": 7.937,
+    "frames": 143,
     "marks": {}
   },
   {
     "name": "05b-tasks-student",
-    "duration": 4.1,
-    "frames": 33,
+    "duration": 2.233,
+    "frames": 23,
     "marks": {}
   },
   {
     "name": "06-phone-task",
-    "duration": 10.567,
-    "frames": 154,
+    "duration": 18.905,
+    "frames": 275,
     "marks": {
-      "steps": 2.533,
-      "upload": 4.833,
-      "text": 6.567,
-      "send": 8.467
+      "steps": 4.003,
+      "upload": 7.403,
+      "text": 10.753,
+      "send": 15.335
     }
   },
   {
     "name": "07-moderation",
-    "duration": 3.867,
-    "frames": 46,
+    "duration": 6.57,
+    "frames": 83,
     "marks": {}
   },
   {
     "name": "07b-points",
-    "duration": 3.3,
-    "frames": 28,
+    "duration": 4.4,
+    "frames": 44,
     "marks": {}
   },
   {
     "name": "08-rewards",
-    "duration": 10.733,
-    "frames": 136,
+    "duration": 18.377,
+    "frames": 246,
     "marks": {
-      "catalog": 2.2,
-      "order": 7.667
+      "catalog": 3.1,
+      "order": 11.837
     }
   },
   {
-    "name": "08b-rewards-curator",
-    "duration": 3,
-    "frames": 32,
-    "marks": {}
-  },
-  {
     "name": "09-kit",
-    "duration": 9.9,
-    "frames": 179,
+    "duration": 16.145,
+    "frames": 273,
     "marks": {
-      "link": 0.7,
-      "builder": 4.033
+      "builder": 1,
+      "link": 8.605
     }
   },
   {
     "name": "10-ini-propose",
-    "duration": 14.383,
-    "frames": 338,
+    "duration": 28.024,
+    "frames": 589,
     "marks": {
-      "form": 2.367,
-      "submit": 11.883
+      "form": 4.07,
+      "who": 14.098,
+      "submit": 23.62
     }
-  },
-  {
-    "name": "11-ini-approve",
-    "duration": 3.633,
-    "frames": 51,
-    "marks": {}
   },
   {
     "name": "12-ini-join",
-    "duration": 6.033,
-    "frames": 109,
-    "marks": {}
-  },
-  {
-    "name": "13-ini-run",
-    "duration": 9.667,
+    "duration": 14.493,
     "frames": 228,
     "marks": {
-      "report": 3.1
+      "note": 6.97
     }
   },
   {
-    "name": "14-ini-done",
-    "duration": 3.8,
-    "frames": 50,
+    "name": "13-ini-accept",
+    "duration": 7.003,
+    "frames": 84,
     "marks": {}
   },
   {
     "name": "15-level-up",
-    "duration": 4.433,
-    "frames": 33,
+    "duration": 8.833,
+    "frames": 83,
     "marks": {}
   },
   {
     "name": "16-library",
-    "duration": 6.2,
-    "frames": 63,
+    "duration": 8.9,
+    "frames": 90,
     "marks": {}
   },
   {
     "name": "17-curator",
-    "duration": 11.7,
-    "frames": 131,
+    "duration": 15.933,
+    "frames": 183,
     "marks": {
-      "community": 2.6,
-      "kpis": 6.2,
-      "funnel": 8.9
+      "community": 3.767,
+      "kpis": 8.433,
+      "funnel": 12.133
     }
   }
 ]
