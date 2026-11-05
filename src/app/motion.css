@@ -324,16 +324,18 @@
 .words > span.on { color: var(--fg); }
 .words > span.acc.on { color: var(--accent); }
 
-.stack-demo { position: relative; height: 440px; max-width: 420px; width: 100%; justify-self: center; }
-.stack-demo .itile { position: absolute; left: 0; right: 0; box-shadow: var(--shadow); }
-.stack-demo .itile:nth-child(1) { top: 0; transform: rotate(-3deg) translateX(-12px); animation: bob 6s var(--ease) infinite; }
-.stack-demo .itile:nth-child(2) { top: 168px; transform: rotate(2deg) translateX(16px); animation: bob 6s var(--ease) infinite 1.2s; }
-.stack-demo .itile:nth-child(3) { top: 300px; transform: rotate(-1deg); animation: bob 6s var(--ease) infinite 2.4s; }
-@keyframes bob { 50% { translate: 0 -8px; } }
-.stack-demo { pointer-events: none; }
+/* Карточки в шапке идут столбиком с зазором: даже на пике покачивания и с наклоном
+   между ними остаётся воздух, поэтому они не наезжают друг на друга. */
+.stack-demo { position: relative; display: grid; gap: 28px; max-width: 430px; width: 100%; justify-self: center; padding: 6px 0 26px; pointer-events: none; }
+.stack-demo .itile { position: relative; box-shadow: var(--shadow); animation: bob 7s var(--ease) infinite; }
+.stack-demo .itile:nth-child(1) { transform: rotate(-1.5deg) translateX(-14px); }
+.stack-demo .itile:nth-child(2) { transform: rotate(1.2deg) translateX(18px); animation-delay: 1.4s; }
+.stack-demo .itile:nth-child(3) { transform: rotate(-0.6deg) translateX(-4px); animation-delay: 2.8s; }
+@keyframes bob { 50% { translate: 0 -6px; } }
 .cta-band { background: var(--deep); }
 .cta-band::after { content: ''; position: absolute; right: -60px; top: -60px; width: 240px; height: 240px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: 0 0 0 40px rgba(255, 255, 255, 0.03), 0 0 0 80px rgba(255, 255, 255, 0.02); animation: float 8s var(--ease) infinite; pointer-events: none; }
-.demo-note { position: absolute; right: -8px; top: 280px; z-index: 2; box-shadow: var(--shadow); animation: pop 0.6s var(--ease) both 1s; }
+/* Наклейка относится к последней карточке (завершённый формат): сидит на её нижнем крае и качается вместе с ней. */
+.demo-note { position: absolute; right: 20px; bottom: 13px; z-index: 2; box-shadow: var(--shadow); animation: pop 0.6s var(--ease) both 1s, bob 7s var(--ease) infinite 2.8s; }
 
 .landing-flow { background: var(--deep); color: #fff; border-radius: 24px; padding: 32px; display: grid; gap: 24px; overflow: hidden; }
 .landing-flow .h1 { color: #fff; }
