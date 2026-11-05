@@ -75,7 +75,7 @@ const CURSOR = `(() => {
 async function context(mobile = false) {
   const c = await browser.newContext({
     viewport: VIEW, deviceScaleFactor: 4 / 3, locale: 'ru-RU', timezoneId: 'Europe/Moscow', reducedMotion: 'reduce', colorScheme: 'dark',
-    ...(mobile ? {} : {}),
+    permissions: ['clipboard-read', 'clipboard-write'],
   });
   await c.addInitScript(CURSOR);
   return c;
@@ -142,7 +142,7 @@ class Scene {
     return b;
   }
   async ensureVisible(locator, { top = 96, bottom = 70 } = {}) {
-    const vh = this.frame ? 740 : VIEW.height;
+    const vh = this.frame ? 704 : VIEW.height;
     const r = await locator.evaluate((e) => { const b = e.getBoundingClientRect(); return { top: b.top, bottom: b.bottom }; });
     if (r.top >= top && r.bottom <= vh - bottom) return;
     const y0 = await this.doc.evaluate(() => window.scrollY);
@@ -302,7 +302,7 @@ await run('approve', async () => {
   await s.point(card, { dy: 0.3 });
   await s.hold(0.7);
   await s.click(card.getByRole('button', { name: 'Принять в программу' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await s.hold(1.0);
+  await s.hold(1.8);
   await s.end();
 });
 
@@ -346,7 +346,7 @@ await run('tasks', async () => {
   await d.point(dt.first(), { dx: 0.35 });
   await d.hold(0.7);
   await d.point(dt.nth(1), { dx: 0.35 });
-  await d.hold(1.0);
+  await d.hold(1.8);
   await d.end();
 });
 
@@ -398,14 +398,14 @@ await run('moderation', async () => {
   await s.point(card.locator('.media-prev'), { dy: 0.5 });
   await s.hold(1.4);
   await s.click(card.getByRole('button', { name: 'Принять' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await s.hold(0.6);
+  await s.hold(1.0);
   await s.end();
   await pA.goto(`${BASE}/me`);
   await settle(pA);
   const m = await scene('07b-points', pA).start(700, 300);
   await m.point(pA.locator('section.level .level-top'), { dx: 0.85 });
   await m.zoom(pA.locator('section.level'), 1.18, 0.6);
-  await m.hold(1.6);
+  await m.hold(2.4);
   await m.unzoom();
   await m.end();
 });
@@ -442,7 +442,7 @@ await run('rewards', async () => {
   await c.point(card, { dy: 0.35 });
   await c.hold(0.6);
   await c.click(card.getByRole('button', { name: 'Выдано' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await c.hold(0.6);
+  await c.hold(1.4);
   await c.end();
 });
 
@@ -504,7 +504,7 @@ await run('ini-team', async () => {
   await c.point(card, { dy: 0.3 });
   await c.hold(0.7);
   await c.click(card.getByRole('button', { name: 'Согласовать' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await c.hold(0.5);
+  await c.hold(1.3);
   await c.end();
 
   await pA.goto(`${BASE}/me/initiatives`);
@@ -557,7 +557,7 @@ await run('ini-done', async () => {
   await c.point(card, { dy: 0.4 });
   await c.hold(0.9);
   await c.click(card.getByRole('button', { name: 'Принять и начислить баллы' }), { wait: () => card.waitFor({ state: 'detached', timeout: 15000 }) });
-  await c.hold(0.5);
+  await c.hold(1.3);
   await c.end();
 
   await pA.goto(iniUrl);
@@ -579,7 +579,7 @@ const [ini] = await sql`select id, format, summary, goal, roles, looking_for fro
 const [tomsk] = await sql`select id from users where region_id = 'tomsk' and role = 'ambassador' and status = 'active' order by points desc limit 1`;
 if (ini && tomsk) {
   await sql`insert into initiatives (author_id, source_id, title, format, region_id, audience, summary, goal, looking_for, roles, team_size, on_site, status, approved_at, started_at)
-            values (${tomsk.id}, ${ini.id}, ${INI + ' — Томск'}, ${ini.format}, 'tomsk', 'Первый курс колледжа', ${ini.summary}, ${ini.goal}, ${ini.lookingFor}, ${ini.roles}, 4, true, 'active', now(), now())`;
+            values (${tomsk.id}, ${ini.id}, ${INI + ' — Томск'}, ${ini.format}, 'tomsk', 'Первый курс колледжа', ${ini.summary}, ${ini.goal}, ${ini.looking_for}, ${ini.roles}, 4, true, 'active', now(), now())`;
 }
 
 // 13. Библиотека форматов

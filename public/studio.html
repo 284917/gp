@@ -5,7 +5,10 @@
   body { background: radial-gradient(900px 640px at 72% 48%, #10365f 0%, #0b2a4d 38%, #08111e 78%); }
   .phone { position: absolute; left: 880px; top: 22px; width: 412px; height: 766px; border-radius: 54px; background: #04070c;
     box-shadow: 0 0 0 2px #2b4466, 0 0 0 9px #0d1626, 0 36px 90px rgba(0, 0, 0, .6); }
-  .phone iframe { position: absolute; left: 11px; top: 13px; width: 390px; height: 740px; border: 0; border-radius: 44px; background: #08111e; }
-  .island { position: absolute; left: 50%; top: 22px; width: 104px; height: 30px; margin-left: -52px; border-radius: 16px; background: #000; z-index: 2; }
+  .phone iframe { position: absolute; left: 11px; top: 49px; width: 390px; height: 704px; border: 0; border-radius: 0 0 44px 44px; background: #08111e; }
+  .status { position: absolute; left: 11px; top: 13px; width: 390px; height: 36px; border-radius: 44px 44px 0 0; background: #0f1b2d; color: #e3ebf5; font: 600 14px/36px -apple-system, 'Segoe UI', Arial, sans-serif; display: flex; justify-content: space-between; padding: 0 30px 0 34px; }
+  .status i { display: inline-block; width: 22px; height: 11px; border: 1.5px solid #e3ebf5; border-radius: 3px; margin-top: 12px; position: relative; }
+  .status i::after { content: ''; position: absolute; inset: 1.5px 5px 1.5px 1.5px; background: #e3ebf5; border-radius: 1px; }
+  .island { position: absolute; left: 50%; top: 19px; width: 100px; height: 26px; margin-left: -50px; border-radius: 14px; background: #000; z-index: 2; }
 </style></head>
-<body><div class="phone"><div class="island"></div><iframe name="phone" id="phone" src="about:blank"></iframe></div></body></html>
+<body><div class="phone"><div class="status"><span>9:41</span><i></i></div><div class="island"></div><iframe name="phone" id="phone" src="about:blank"></iframe></div></body></html>
