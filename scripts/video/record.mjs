@@ -18,13 +18,14 @@ const PHOTO = resolve('scripts/video/assets/kadr-smeny.jpg');
 const INI = 'Экскурсия на АЗС для первокурсников';
 const MARINA = { name: 'Марина Соколова', email: 'marina@demo.golos' };
 
-await rm(OUT, { recursive: true, force: true });
+const ONLY = (process.env.SCENES || '').split(',').filter(Boolean);
+if (!ONLY.length) await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 await rm(TMP, { recursive: true, force: true });
 
 const sql = postgres(process.env.DATABASE_URL, { max: 1, prepare: false, onnotice: () => {} });
 const browser = await chromium.launch();
-const manifest = [];
+const manifest = ONLY.length ? JSON.parse(await (await import('node:fs/promises')).readFile(`${OUT}/manifest.json`, 'utf8').catch(() => '[]')) : [];
 const log = (...a) => console.log('[video]', ...a);
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -219,7 +220,9 @@ class Scene {
       '-vf', 'fps=30,scale=1920:1080:flags=lanczos,format=yuv420p', '-c:v', 'libx264', '-crf', '14', '-preset', 'medium',
       '-r', '30', '-movflags', '+faststart', tmp]);
     execFileSync('mv', [tmp, `${OUT}/${this.name}.mp4`]);
-    manifest.push({ name: this.name, duration: +this.t.toFixed(3), frames: this.n, marks: this.marks });
+    const entry = { name: this.name, duration: +this.t.toFixed(3), frames: this.n, marks: this.marks };
+    const at = manifest.findIndex((m) => m.name === this.name);
+    if (at >= 0) manifest[at] = entry; else manifest.push(entry);
     await writeFile(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2));
     await rm(this.dir, { recursive: true, force: true });
     log('готово', this.name, this.t.toFixed(1), 'с');
@@ -240,31 +243,56 @@ const danCtx = await context();
 const pD = await danCtx.newPage();
 await login(pD, 'daniil@demo.golos');
 
-// 1. Программа: главная страница
+// 1. Программа: главная страница целиком
 await run('landing', async () => {
   await pA.goto(BASE);
   await settle(pA);
   const s = await scene('01-landing', pA).start(1010, 610);
-  await s.hold(1.4);
-  await s.move(1120, 470, 0.9);
-  await s.hold(0.8);
+  await s.hold(1.3);
+  await s.move(1120, 470, 0.8);
+  await s.hold(0.7);
   s.mark('who');
-  await s.scrollToEl(pA.locator('#who'), 70, 1.1);
-  await s.hold(1.2);
+  await s.scrollToEl(pA.locator('#who'), 80, 1.0);
+  await s.move(560, 560, 0.6);
+  await s.hold(1.6);
   s.mark('initiatives');
-  await s.scrollToEl(pA.locator('#initiatives'), 70, 1.1);
-  await s.move(700, 520, 0.6);
-  await s.hold(1.4);
+  await s.scrollToEl(pA.locator('#initiatives'), 80, 1.0);
+  await s.move(720, 540, 0.5);
+  await s.hold(1.3);
+  await s.scrollToEl(pA.locator('section.tagline'), 120, 0.9);
+  await s.hold(1.2);
+  s.mark('regions');
+  await s.scrollToEl(pA.locator('.landing-flow'), 90, 1.0);
+  await s.move(900, 560, 0.6);
+  await s.hold(1.8);
   s.mark('path');
-  await s.scrollToEl(pA.locator('#path .levels'), 150, 1.1);
-  await s.move(950, 560, 0.6);
-  await s.hold(1.4);
+  await s.scrollToEl(pA.locator('#path'), 70, 1.0);
+  await s.move(950, 520, 0.5);
+  await s.hold(1.3);
+  await s.scrollToEl(pA.locator('#path .card').last(), 160, 0.8);
+  await s.hold(1.0);
+  await s.scrollToEl(pA.locator('ol.how'), 220, 0.8);
+  await s.hold(1.2);
   s.mark('perks');
-  await s.scrollToEl(pA.locator('#perks'), 70, 1.0);
-  await s.move(820, 600, 0.5);
+  await s.scrollToEl(pA.locator('#perks'), 70, 0.9);
+  await s.move(820, 560, 0.5);
+  await s.hold(1.3);
+  await s.scrollToEl(pA.locator('section', { hasText: 'Четыре куратора на всю страну' }).first(), 140, 0.9);
+  await s.hold(1.3);
+  s.mark('faq');
+  await s.scrollToEl(pA.locator('#faq'), 70, 0.9);
+  await s.click(pA.locator('#faq summary', { hasText: 'Даёт ли программа' }));
   await s.hold(1.4);
+  await s.scrollToEl(pA.locator('.cta-band'), 260, 0.9);
+  await s.point(pA.locator('.cta-band a.btn'));
+  await s.hold(1.2);
   await s.end();
 });
+if (ONLY.length && ONLY.every((n) => n === '01-landing')) {
+  await browser.close();
+  await sql.end();
+  process.exit(process.exitCode ?? 0);
+}
 
 // 2. Заявка
 await run('join', async () => {
