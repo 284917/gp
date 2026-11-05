@@ -49,7 +49,8 @@ jobs:
       - run: node scripts/migrate.mjs
       - run: node scripts/deck/seed.mjs
       - run: npx next build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
+        timeout-minutes: 6
       - name: Start
         run: |
           npx next start > server.log 2>&1 &
