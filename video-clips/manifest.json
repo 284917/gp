@@ -1,0 +1,140 @@
+[
+  {
+    "name": "01-landing",
+    "duration": 13.467,
+    "frames": 182,
+    "marks": {
+      "who": 2.533,
+      "initiatives": 4.833,
+      "path": 7.833,
+      "perks": 10.733
+    }
+  },
+  {
+    "name": "02-join",
+    "duration": 12.917,
+    "frames": 314,
+    "marks": {
+      "role": 2.033,
+      "fields": 2.567,
+      "motivation": 7.683,
+      "submit": 10.183
+    }
+  },
+  {
+    "name": "03-approve",
+    "duration": 3.4,
+    "frames": 30,
+    "marks": {}
+  },
+  {
+    "name": "04-cabinet",
+    "duration": 6.067,
+    "frames": 45,
+    "marks": {
+      "level": 1,
+      "week": 2.7,
+      "tandem": 4.1
+    }
+  },
+  {
+    "name": "05-tasks",
+    "duration": 5.7,
+    "frames": 98,
+    "marks": {}
+  },
+  {
+    "name": "05b-tasks-student",
+    "duration": 3.3,
+    "frames": 33,
+    "marks": {}
+  },
+  {
+    "name": "06-phone-task",
+    "duration": 10.667,
+    "frames": 157,
+    "marks": {
+      "steps": 2.567,
+      "upload": 4.867,
+      "text": 6.133,
+      "send": 8.567
+    }
+  },
+  {
+    "name": "07-moderation",
+    "duration": 3.467,
+    "frames": 46,
+    "marks": {}
+  },
+  {
+    "name": "07b-points",
+    "duration": 2.5,
+    "frames": 28,
+    "marks": {}
+  },
+  {
+    "name": "08-rewards",
+    "duration": 10.733,
+    "frames": 136,
+    "marks": {
+      "catalog": 2.2,
+      "order": 7.667
+    }
+  },
+  {
+    "name": "08b-rewards-curator",
+    "duration": 2.2,
+    "frames": 32,
+    "marks": {}
+  },
+  {
+    "name": "09-kit",
+    "duration": 9.9,
+    "frames": 179,
+    "marks": {
+      "link": 0.7,
+      "builder": 4.033
+    }
+  },
+  {
+    "name": "10-ini-propose",
+    "duration": 14.383,
+    "frames": 338,
+    "marks": {
+      "form": 2.367,
+      "submit": 11.883
+    }
+  },
+  {
+    "name": "11-ini-approve",
+    "duration": 2.833,
+    "frames": 51,
+    "marks": {}
+  },
+  {
+    "name": "12-ini-join",
+    "duration": 6.033,
+    "frames": 109,
+    "marks": {}
+  },
+  {
+    "name": "13-ini-run",
+    "duration": 9.667,
+    "frames": 228,
+    "marks": {
+      "report": 3.1
+    }
+  },
+  {
+    "name": "14-ini-done",
+    "duration": 3,
+    "frames": 50,
+    "marks": {}
+  },
+  {
+    "name": "15-level-up",
+    "duration": 4.433,
+    "frames": 33,
+    "marks": {}
+  }
+]
