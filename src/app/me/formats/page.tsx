@@ -6,6 +6,7 @@ import { getCommunityStats, listInitiatives } from '@/lib/initiatives';
 import { FORMATS, FORMAT_KEYS, type InitiativeFormat } from '@/lib/domain';
 import { Icon } from '@/components/Icon';
 import { HubTabs } from '@/components/HubTabs';
+import { ShowMore } from '@/components/ShowMore';
 import { InitiativeTile } from '@/components/Initiative';
 import { RegionFlow, type FlowRegion } from '@/components/RegionFlow';
 
@@ -54,9 +55,9 @@ export default async function FormatsPage({ searchParams }: { searchParams: Prom
       </nav>
 
       {sorted.length ? (
-        <div className="igrid">
+        <ShowMore total={sorted.length}>
           {sorted.map((i, n) => <InitiativeTile key={i.id} i={i} index={n} href={`/me/initiatives/${i.id}`} />)}
-        </div>
+        </ShowMore>
       ) : (
         <div className="empty-hero" data-reveal>
           <span className="empty-ic"><Icon name="library" size={30} /></span>

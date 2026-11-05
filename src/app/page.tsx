@@ -307,6 +307,7 @@ export default async function Landing() {
                 <details key={i} data-reveal style={{ '--i': i % 4 } as React.CSSProperties}><summary>{q}</summary><p>{a}</p></details>
               ))}
             </div>
+            <p className="sub faq-more">Не нашли ответ? <Link className="link" href="/help">Задайте вопрос куратору</Link> — ответим в течение пары рабочих дней.</p>
           </div>
         </section>
 
@@ -323,6 +324,7 @@ export default async function Landing() {
       <footer className="site-foot">
         <div className="container">
           <span>© {new Date().getFullYear()} Голос компании</span>
+          <Link className="link" href="/help">Вопрос куратору</Link>
           <span>Проект команды для кейса Intelligence CUP. Не является официальным сайтом компании.</span>
         </div>
       </footer>

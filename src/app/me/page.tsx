@@ -116,7 +116,7 @@ export default async function MePage() {
             {calling ? (
               <Link href="/me/initiatives?view=me" className="calling">
                 <i className="live" aria-hidden="true" />
-                <span className="grow"><b>{calling}</b> {plural(calling, 'команда ищет', 'команды ищут', 'команд ищут')} {u.segment ? SEGMENTS[u.segment].label.toLowerCase() : 'участников'}</span>
+                <span className="grow"><b>{calling}</b> {plural(calling, 'команда ищет', 'команды ищут', 'команд ищут')} {u.segment ? SEGMENTS[u.segment].whom : 'участников'}</span>
                 <Icon name="arrow" size={16} />
               </Link>
             ) : (

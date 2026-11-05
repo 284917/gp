@@ -12,11 +12,12 @@ const SCOPE_LABEL = { internal: 'куратор сотрудников', externa
 
 export default async function CuratorLayout({ children }: { children: React.ReactNode }) {
   const c = await requireCurator();
-  const [counts] = await db()<{ moderation: number; applications: number; redemptions: number; initiatives: number }[]>`
+  const [counts] = await db()<{ moderation: number; applications: number; redemptions: number; initiatives: number; questions: number }[]>`
     select (select count(*)::int from submissions where status = 'pending') as moderation,
            (select count(*)::int from users where role = 'ambassador' and status = 'pending') as applications,
            (select count(*)::int from redemptions where status = 'requested') as redemptions,
-           (select count(*)::int from initiatives where status in ('idea', 'reporting')) as initiatives`;
+           (select count(*)::int from initiatives where status in ('idea', 'reporting')) as initiatives,
+           (select count(*)::int from questions where status = 'open') as questions`;
   return (
     <div className="cur-shell">
       <aside className="cur-side">

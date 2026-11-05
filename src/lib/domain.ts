@@ -5,11 +5,11 @@ export type SubmitType = 'text' | 'link' | 'file';
 export type SubmissionStatus = 'pending' | 'approved' | 'returned';
 export type UserStatus = 'pending' | 'active' | 'paused' | 'rejected';
 
-export const SEGMENTS: Record<Segment, { label: string; long: string; group: Group; hint: string; orgLabel: string; posLabel: string; orgPlaceholder: string; posPlaceholder: string }> = {
-  office: { label: 'Офис', long: 'Сотрудник офиса', group: 'internal', hint: 'Посты, отзывы, выступления, реферальная программа', orgLabel: 'Подразделение', posLabel: 'Должность', orgPlaceholder: 'Офис дирекции, Омск', posPlaceholder: 'Логист' },
-  site: { label: 'АЗС и нефтебаза', long: 'Сотрудник на объекте', group: 'internal', hint: 'Задания на 5–10 минут с телефона, можно голосом', orgLabel: 'Объект', posLabel: 'Должность', orgPlaceholder: 'АЗС № 118', posPlaceholder: 'Оператор АЗС' },
-  uni: { label: 'Студент вуза', long: 'Студент вуза', group: 'external', hint: 'Мероприятия, ярмарки и контент в вузе', orgLabel: 'Вуз', posLabel: 'Курс и направление', orgPlaceholder: 'Технический университет', posPlaceholder: '3 курс, логистика' },
-  college: { label: 'Студент колледжа', long: 'Студент колледжа', group: 'external', hint: 'Экскурсии на объекты, стенды, короткие видео', orgLabel: 'Колледж', posLabel: 'Курс и специальность', orgPlaceholder: 'Нефтяной техникум', posPlaceholder: '2 курс, хранение нефти' },
+export const SEGMENTS: Record<Segment, { label: string; long: string; whom: string; group: Group; hint: string; orgLabel: string; posLabel: string; orgPlaceholder: string; posPlaceholder: string }> = {
+  office: { label: 'Офис', long: 'Сотрудник офиса', whom: 'сотрудников офиса', group: 'internal', hint: 'Посты, отзывы, выступления, реферальная программа', orgLabel: 'Подразделение', posLabel: 'Должность', orgPlaceholder: 'Офис дирекции, Омск', posPlaceholder: 'Логист' },
+  site: { label: 'АЗС и нефтебаза', long: 'Сотрудник на объекте', whom: 'сотрудников АЗС и нефтебаз', group: 'internal', hint: 'Задания на 5–10 минут с телефона, можно голосом', orgLabel: 'Объект', posLabel: 'Должность', orgPlaceholder: 'АЗС № 118', posPlaceholder: 'Оператор АЗС' },
+  uni: { label: 'Студент вуза', long: 'Студент вуза', whom: 'студентов вузов', group: 'external', hint: 'Мероприятия, ярмарки и контент в вузе', orgLabel: 'Вуз', posLabel: 'Курс и направление', orgPlaceholder: 'Технический университет', posPlaceholder: '3 курс, логистика' },
+  college: { label: 'Студент колледжа', long: 'Студент колледжа', whom: 'студентов колледжей', group: 'external', hint: 'Экскурсии на объекты, стенды, короткие видео', orgLabel: 'Колледж', posLabel: 'Курс и специальность', orgPlaceholder: 'Нефтяной техникум', posPlaceholder: '2 курс, хранение нефти' },
 };
 export const SEGMENT_KEYS = Object.keys(SEGMENTS) as Segment[];
 export const isSegment = (v: unknown): v is Segment => typeof v === 'string' && v in SEGMENTS;

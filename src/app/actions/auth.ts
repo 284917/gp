@@ -20,10 +20,10 @@ export async function login(_prev: FormState, fd: FormData): Promise<FormState> 
   const password = String(fd.get('password') ?? '');
   const next = safeNext(str(fd, 'next'));
   if (!email || !password) return { error: 'Введите почту и пароль.', values: { email } };
-  let u: { id: number; passwordHash: string; role: string } | undefined;
+  let u: { id: number; passwordHash: string; role: string; passwordTemp: boolean } | undefined;
   try {
-    const rows = await db()<{ id: number; passwordHash: string; role: string }[]>`
-      select id, password_hash, role from users where email = ${email}`;
+    const rows = await db()<{ id: number; passwordHash: string; role: string; passwordTemp: boolean }[]>`
+      select id, password_hash, role, password_temp from users where email = ${email}`;
     u = rows[0];
     if (!u || !(await compare(password, u.passwordHash))) {
       return { error: 'Неверная почта или пароль.', values: { email } };
@@ -34,6 +34,8 @@ export async function login(_prev: FormState, fd: FormData): Promise<FormState> 
     return { error: `Не удалось войти: ${err instanceof Error ? err.message : String(err)}`, values: { email } };
   }
   const home = u.role === 'curator' ? '/curator' : '/me';
+  // вход по временному паролю от куратора — сразу в профиль, чтобы задать свой
+  if (u.passwordTemp && u.role === 'ambassador') redirect('/me/profile?temp=1#password');
   redirect(next && next.startsWith(home) ? next : home);
 }
 

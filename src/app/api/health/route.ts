@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, dbUrl } from '@/lib/db';
+import { blobAccess, blobEnabled } from '@/lib/files';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,8 @@ export async function GET() {
       database: 'connected',
       users: row.users,
       tasks: row.tasks,
-      uploads: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      uploads: blobEnabled(),
+      storage: blobEnabled() ? { access: blobAccess(), auth: process.env.BLOB_STORE_ID ? 'oidc' : 'token' } : null,
     });
   } catch (err) {
     return NextResponse.json({ ok: false, database: 'error', message: err instanceof Error ? err.message : String(err) }, { status: 503 });

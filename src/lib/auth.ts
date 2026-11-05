@@ -28,6 +28,8 @@ export type SessionUser = {
   motivation: string | null;
   mentorId: number | null;
   isDemo: boolean;
+  /** вошёл по временному паролю от куратора — нужно задать свой */
+  passwordTemp: boolean;
   createdAt: Date;
   lastActiveAt: Date | null;
   /** завершённые инициативы: всего (автором или в команде) и свои — нужны для уровня */
@@ -76,7 +78,7 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
   if (!Number.isInteger(id)) return null;
   const rows = await db()<SessionUser[]>`
     select u.id, u.email, u.name, u.role, u.curator_scope, u.segment, u.region_id, u.status, u.is_captain,
-           u.points, u.spent, u.org, u.position, u.phone, u.motivation, u.mentor_id, u.is_demo, u.created_at, u.last_active_at,
+           u.points, u.spent, u.org, u.position, u.phone, u.motivation, u.mentor_id, u.is_demo, u.password_temp, u.created_at, u.last_active_at,
            r.city as region_city, r.name as region_name,
            (select count(*)::int from initiatives i where i.status = 'done' and (i.author_id = u.id or exists (select 1 from initiative_members im where im.initiative_id = i.id and im.user_id = u.id and im.status = 'accepted'))) as ini_joined,
            (select count(*)::int from initiatives i where i.status = 'done' and i.author_id = u.id) as ini_authored
@@ -116,4 +118,4 @@ export async function requireAmbassador() {
   return u;
 }
 
-export const blobEnabled = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+export { blobEnabled } from './files';

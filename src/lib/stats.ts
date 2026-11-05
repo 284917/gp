@@ -40,7 +40,8 @@ export async function getProgramStats() {
     left join submissions s on s.status = 'approved' and date_trunc('week', s.created_at at time zone 'Europe/Moscow') = w.wk
     left join users u on u.id = s.user_id
     group by w.wk order by w.wk`;
-  const lastWeeks = weeks.slice(-14);
+  // текущая неделя ещё не закончилась — на графике она выглядела бы провалом, поэтому показываем только завершённые
+  const lastWeeks = (weeks.length > 1 ? weeks.slice(0, -1) : weeks).slice(-14);
 
   const [load] = await sql<{ captain: number; curator: number }[]>`
     select count(*) filter (where reviewer_role = 'captain')::int as captain, count(*) filter (where reviewer_role = 'curator')::int as curator

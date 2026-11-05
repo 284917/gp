@@ -6,10 +6,10 @@ import { compare, hash } from 'bcryptjs';
 import { db } from '@/lib/db';
 import { requireAmbassador, requireMember, requireUser } from '@/lib/auth';
 import { groupOf, levelOf } from '@/lib/domain';
+import { BLOB_URL } from '@/lib/files';
 import type { FormState } from './auth';
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
-const BLOB_HOST = /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i;
 
 export async function submitTask(_prev: FormState, fd: FormData): Promise<FormState> {
   const u = await requireAmbassador();
@@ -32,7 +32,10 @@ export async function submitTask(_prev: FormState, fd: FormData): Promise<FormSt
   if (!body && !link && !fileUrl) return { error: 'Добавьте текст, ссылку или файл.' };
   if (body.length > 5000) return { error: 'Текст слишком длинный: максимум 5000 знаков.' };
   if (link && !/^https?:\/\/\S+\.\S+/.test(link)) return { error: 'Ссылка должна начинаться с https://' };
-  if (fileUrl && !BLOB_HOST.test(fileUrl)) return { error: 'Файл не загрузился. Попробуйте ещё раз.' };
+  // файл должен лежать в хранилище программы и в папке самого участника
+  if (fileUrl && (!BLOB_URL.test(fileUrl) || !new URL(fileUrl).pathname.startsWith(`/submissions/${u.id}/`))) {
+    return { error: 'Файл не загрузился. Попробуйте ещё раз.' };
+  }
 
   await sql.begin(async (tx) => {
     await tx`insert into submissions (user_id, task_id, body, link, file_url, file_name, flagged)
@@ -91,7 +94,9 @@ export async function changePassword(_prev: FormState, fd: FormData): Promise<Fo
   const sql = db();
   const [row] = await sql<{ passwordHash: string }[]>`select password_hash from users where id = ${u.id}`;
   if (!row || !(await compare(current, row.passwordHash))) return { error: 'Текущий пароль указан неверно.' };
-  await sql`update users set password_hash = ${await hash(next, 10)} where id = ${u.id}`;
+  if (next === current) return { error: 'Новый пароль должен отличаться от текущего.' };
+  await sql`update users set password_hash = ${await hash(next, 10)}, password_temp = false where id = ${u.id}`;
+  revalidatePath('/me', 'layout');
   return { ok: 'Пароль изменён.' };
 }
 

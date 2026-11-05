@@ -37,7 +37,7 @@ export function ReviewCard({ s, showRoute = false }: { s: ReviewItem; showRoute?
       <p className="mod-title">{s.title} <span className="pts">+{s.points}</span></p>
       {s.body ? <p className="text-pre" style={{ fontSize: 14, color: 'var(--muted)' }}>{s.body}</p> : null}
       {s.link ? <a className="link row" href={s.link} target="_blank" rel="noreferrer" style={{ fontSize: 14 }}><Icon name="external" size={15} /> {s.link.replace(/^https?:\/\//, '').slice(0, 60)}</a> : null}
-      {s.fileUrl ? <MediaPreview url={s.fileUrl} name={s.fileName} /> : null}
+      {s.fileUrl ? <MediaPreview id={s.id} url={s.fileUrl} name={s.fileName} /> : null}
       {s.flagged ? <p className="flag"><Icon name="shield" size={16} /> {KINDS[s.kind].label === 'Ссылка' || KINDS[s.kind].label === 'Текст' ? 'Внешняя публикация: проверьте формулировки и цифры' : 'Съёмка на объекте: проверьте зону и людей в кадре'}</p> : null}
       {showRoute ? (
         <p className="fine">{s.flagged ? 'Отмечено для куратора' : s.captainName ? `Может проверить капитан: ${s.captainName}` : 'В регионе нет капитана'}</p>

@@ -310,10 +310,72 @@ await step('формат повторяют из библиотеки', async ()
   await p.context().close();
 });
 
+// 7б. Вопрос куратору, временный пароль и ответ в кабинет
+await step('вопрос куратору и сброс пароля', async () => {
+  const p = await page();
+  await p.goto(`${BASE}/help?topic=access`);
+  await p.fill('#q-name', ANNA.name);
+  await p.fill('#q-email', ANNA.email);
+  await p.fill('#q-body', 'Не помню пароль от кабинета, помогите войти.');
+  await p.click('button[type="submit"]:has-text("Отправить куратору")');
+  await p.getByText('Вопрос отправлен').waitFor();
+  await shot(p, '80-help');
+  await p.context().close();
+
+  const c = await page();
+  await loginAs(c, ADMIN);
+  await c.goto(`${BASE}/curator/questions`);
+  const q = c.locator('article.mod', { hasText: ANNA.email });
+  await q.waitFor();
+  await shot(c, '81-curator-questions');
+  await q.getByRole('link', { name: 'Карточка участника' }).click();
+  await c.waitForURL(/\/curator\/ambassadors\/\d+/);
+  await c.getByRole('button', { name: 'Сбросить пароль' }).click();
+  await c.getByRole('button', { name: 'Да, выдать временный пароль' }).click();
+  const temp = (await c.locator('.temp-pw code').textContent({ timeout: 15000 }))?.trim();
+  if (!temp || temp.length < 8) throw new Error('временный пароль не показан');
+  await shot(c, '82-reset-password');
+  await c.goto(`${BASE}/curator/questions`);
+  if (await c.locator('article.mod', { hasText: ANNA.email }).count()) throw new Error('вопрос о доступе не закрылся после сброса пароля');
+  await c.context().close();
+
+  const a = await page();
+  await loginAs(a, { email: ANNA.email, password: temp });
+  await a.waitForURL(/\/me\/profile/);
+  await a.getByText('Вы вошли по временному паролю').first().waitFor();
+  await a.fill('#pw-cur', temp);
+  await a.fill('#pw-new', ANNA.password);
+  await a.click('button[type="submit"]:has-text("Сменить пароль")');
+  await a.getByText('Пароль изменён.').waitFor();
+  await a.goto(`${BASE}/help?topic=program`);
+  await a.fill('#q-body', 'Когда начисляют баллы за проект?');
+  await a.click('button[type="submit"]:has-text("Отправить куратору")');
+  await a.getByText('Вопрос отправлен').waitFor();
+  await a.context().close();
+
+  const c2 = await page();
+  await loginAs(c2, ADMIN);
+  await c2.goto(`${BASE}/curator/questions`);
+  const q2 = c2.locator('article.mod', { hasText: 'Когда начисляют баллы' });
+  await q2.locator('textarea[name="reply"]').fill('После того как куратор примет итоги проекта.');
+  await q2.getByRole('button', { name: 'Ответить и закрыть' }).click();
+  await q2.waitFor({ state: 'detached', timeout: 15000 });
+  await c2.context().close();
+
+  const a2 = await page();
+  await loginAs(a2, ANNA);
+  await a2.goto(`${BASE}/help`);
+  await a2.getByText('После того как куратор примет итоги проекта.').waitFor();
+  await a2.goto(`${BASE}/me/kit`);
+  const link = await a2.locator('.link-row input').inputValue();
+  if (!/utm_source=ambassador/.test(link) || !/utm_content=a\d+/.test(link)) throw new Error(`личная ссылка без UTM-метки: ${link}`);
+  await a2.context().close();
+});
+
 // 8. Телефон и тёмная тема
 await step('мобильная версия', async () => {
   const p = await page(MOBILE);
-  for (const [path, name] of [['/', '60-m-landing'], ['/login', '60-m-login'], ['/join', '60-m-join']]) {
+  for (const [path, name] of [['/', '60-m-landing'], ['/login', '60-m-login'], ['/join', '60-m-join'], ['/help', '60-m-help']]) {
     await p.goto(`${BASE}${path}`);
     await noOverflow(p, 'телефон');
     await shot(p, name);
@@ -335,7 +397,7 @@ await step('мобильная версия', async () => {
   const c = await page(MOBILE);
   await loginAs(c, ADMIN);
   await shot(c, '68-m-curator');
-  for (const path of ['', '/moderation', '/applications', '/ambassadors', '/tasks', '/tasks/new', '/rewards', '/regions', '/metrics', '/account', '/initiatives']) {
+  for (const path of ['', '/moderation', '/applications', '/questions', '/ambassadors', '/tasks', '/tasks/new', '/rewards', '/regions', '/metrics', '/account', '/initiatives']) {
     await c.goto(`${BASE}/curator${path}`);
     await noOverflow(c, 'телефон, куратор');
   }
