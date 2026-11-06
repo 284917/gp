@@ -20,13 +20,22 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx playwright install chromium
         timeout-minutes: 6
+      - name: ffmpeg
+        timeout-minutes: 6
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            curl -fsSL --retry 3 -o /tmp/ff.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz \
+              && mkdir -p /tmp/ff && tar -xJf /tmp/ff.tar.xz -C /tmp/ff --strip-components=1 \
+              && sudo ln -sf /tmp/ff/bin/ffmpeg /usr/local/bin/ffmpeg
+          fi
+          ffmpeg -version | head -1
       - run: node scripts/video/music.mjs
       - name: Commit music
         run: |
-          rm -f music/page.html
+          rm -f music/page.html music2/page.html
           git config user.name "deck-shots"
           git config user.email "deck-shots@users.noreply.github.com"
-          git add music
+          git add music2
           git commit -m "Музыка-кандидаты для ролика" || echo "нет изменений"
           git pull --rebase -q || true
           git push
