@@ -1,0 +1,493 @@
+[
+ {
+  "url": "https://assets.mixkit.co/music/839/839.mp3",
+  "text": "Tears of Joy by Michael Ramir C. Folk Pop Uplifting 2:20",
+  "pages": [
+   "happy",
+   "positive",
+   "piano",
+   "acoustic",
+   "guitar",
+   "uplifting",
+   "travel",
+   "summer",
+   "acoustic"
+  ],
+  "sec": 140,
+  "id": "01"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/801/801.mp3",
+  "text": "Happy Home by Michael Ramir C. Pop Relaxed 1:50",
+  "pages": [
+   "happy",
+   "positive",
+   "acoustic",
+   "guitar",
+   "motivational",
+   "travel",
+   "summer",
+   "pop",
+   "acoustic"
+  ],
+  "sec": 110,
+  "id": "02"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/13/13.mp3",
+  "text": "Summer Fun by Ahjay Stelino Folk Pop Relaxed 2:19",
+  "pages": [
+   "positive",
+   "piano",
+   "acoustic",
+   "guitar",
+   "motivational",
+   "travel",
+   "summer",
+   "acoustic",
+   "cinematic"
+  ],
+  "sec": 139,
+  "id": "03"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/963/963.mp3",
+  "text": "Just Keep Walking by Michael Ramir C. Indie Pop Carefree 2:05",
+  "pages": [
+   "positive",
+   "acoustic",
+   "guitar",
+   "uplifting",
+   "travel",
+   "summer",
+   "acoustic",
+   "indie"
+  ],
+  "sec": 125,
+  "id": "04"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/1063/1063.mp3",
+  "text": "Fun at the Farm by Michael Ramir C. Country Folk Friendly 1:46",
+  "pages": [
+   "happy",
+   "acoustic",
+   "guitar",
+   "travel",
+   "acoustic",
+   "folk"
+  ],
+  "sec": 106,
+  "id": "05"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/532/532.mp3",
+  "text": "A Happy Child by Diego Nava Folk Pop Indie Folk 1:52",
+  "pages": [
+   "happy",
+   "acoustic",
+   "guitar",
+   "hopeful",
+   "acoustic",
+   "indie"
+  ],
+  "sec": 112,
+  "id": "06"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/617/617.mp3",
+  "text": "Wind Leaves by Eugenio Mininni Country Relaxed Friendly 3:25",
+  "pages": [
+   "acoustic",
+   "guitar",
+   "motivational",
+   "travel",
+   "corporate",
+   "acoustic"
+  ],
+  "sec": 205,
+  "id": "07"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/32/32.mp3",
+  "text": "Driving Ambition by Ahjay Stelino Film Score Uplifting 1:42",
+  "pages": [
+   "positive",
+   "piano",
+   "motivational",
+   "uplifting",
+   "hopeful"
+  ],
+  "sec": 102,
+  "id": "08"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/288/288.mp3",
+  "text": "One More Dance by Arulo Pop Dance-Pop Carefree 1:40",
+  "pages": [
+   "positive",
+   "piano",
+   "travel",
+   "summer",
+   "pop"
+  ],
+  "sec": 100,
+  "id": "09"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/31/31.mp3",
+  "text": "Dreaming Big by Ahjay Stelino Film Score Uplifting 1:50",
+  "pages": [
+   "positive",
+   "piano",
+   "motivational",
+   "uplifting",
+   "hopeful"
+  ],
+  "sec": 110,
+  "id": "10"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/834/834.mp3",
+  "text": "It's Love by Michael Ramir C. Corporate Music Electronica 1:37",
+  "pages": [
+   "positive",
+   "piano",
+   "motivational",
+   "uplifting",
+   "corporate"
+  ],
+  "sec": 97,
+  "id": "11"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/817/817.mp3",
+  "text": "The Duel by Michael Ramir C. Country Rock Rock 1:43",
+  "pages": [
+   "acoustic",
+   "guitar",
+   "motivational",
+   "travel",
+   "acoustic"
+  ],
+  "sec": 103,
+  "id": "12"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/175/175.mp3",
+  "text": "Digital Clouds by Alejandro Magaña (A. M.) Chillout Electronic 1:41",
+  "pages": [
+   "positive",
+   "chill",
+   "corporate",
+   "chillout"
+  ],
+  "sec": 101,
+  "id": "13"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/684/684.mp3",
+  "text": "Classical vibes 4 by Grigoriy Nuzhny Film Score Uplifting 2:17",
+  "pages": [
+   "positive",
+   "piano",
+   "uplifting",
+   "hopeful"
+  ],
+  "sec": 137,
+  "id": "14"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/480/480.mp3",
+  "text": "Curiosity by Diego Nava Chillout Corporate Music 1:40",
+  "pages": [
+   "positive",
+   "chill",
+   "corporate",
+   "chillout"
+  ],
+  "sec": 100,
+  "id": "15"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/1000/1000.mp3",
+  "text": "I Can Hear Your Heartbeat by Michael Ramir C. Pop Indie Pop Confident 1:50",
+  "pages": [
+   "positive",
+   "motivational",
+   "pop",
+   "indie"
+  ],
+  "sec": 110,
+  "id": "16"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/135/135.mp3",
+  "text": "Sleepy Cat by Alejandro Magaña (A. M.) Chillout Downtempo 1:59",
+  "pages": [
+   "piano",
+   "lo-fi",
+   "chill",
+   "chillout"
+  ],
+  "sec": 119,
+  "id": "17"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/797/797.mp3",
+  "text": "Forever in My Heart by Michael Ramir C. Contemporary Folk Relaxed 2:29",
+  "pages": [
+   "acoustic",
+   "guitar",
+   "acoustic",
+   "cinematic"
+  ],
+  "sec": 149,
+  "id": "18"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/529/529.mp3",
+  "text": "Walking in the Park by Diego Nava Folk Pop Carefree 1:35",
+  "pages": [
+   "acoustic",
+   "guitar",
+   "summer",
+   "acoustic"
+  ],
+  "sec": 95,
+  "id": "19"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/158/158.mp3",
+  "text": "Happy Times by Alejandro Magaña (A. M.) Pop Indie Pop Uplifting 1:40",
+  "pages": [
+   "motivational",
+   "uplifting",
+   "pop",
+   "indie"
+  ],
+  "sec": 100,
+  "id": "20"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/988/988.mp3",
+  "text": "Day Dreamin' with U by Michael Ramir C. Chillout Downtempo 1:58",
+  "pages": [
+   "uplifting",
+   "hopeful",
+   "chill",
+   "chillout"
+  ],
+  "sec": 118,
+  "id": "21"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/644/644.mp3",
+  "text": "Upbeat Jazz by Francisco Alvear Jazz Humorous Lively 1:50",
+  "pages": [
+   "upbeat",
+   "piano",
+   "jazz"
+  ],
+  "sec": 110,
+  "id": "22"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/852/852.mp3",
+  "text": "Music and Life by Michael Ramir C. Folk Pop Friendly 2:23",
+  "pages": [
+   "happy",
+   "guitar",
+   "summer"
+  ],
+  "sec": 143,
+  "id": "23"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/780/780.mp3",
+  "text": "Okay by Michael Ramir C. Ska Playful Bass 2:00",
+  "pages": [
+   "happy",
+   "travel",
+   "summer"
+  ],
+  "sec": 120,
+  "id": "24"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/33/33.mp3",
+  "text": "Motivating Mornings by Ahjay Stelino Corporate Music Propulsive 1:36",
+  "pages": [
+   "positive",
+   "motivational",
+   "corporate"
+  ],
+  "sec": 96,
+  "id": "25"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/1140/1140.mp3",
+  "text": "Funkee Monkeee by Michael Ramir C. Funk Disco Confident 1:38",
+  "pages": [
+   "positive",
+   "motivational",
+   "funk"
+  ],
+  "sec": 98,
+  "id": "26"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/200/200.mp3",
+  "text": "Oh Lord by Arulo Dance-Pop Pop Carefree 2:23",
+  "pages": [
+   "positive",
+   "summer",
+   "pop"
+  ],
+  "sec": 143,
+  "id": "27"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/724/724.mp3",
+  "text": "PlaceIt World 01 by Lily J Corporate Music 1:36",
+  "pages": [
+   "piano",
+   "corporate",
+   "cinematic"
+  ],
+  "sec": 96,
+  "id": "28"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/52/52.mp3",
+  "text": "The Long Road by Ahjay Stelino Rock Reflective 1:37",
+  "pages": [
+   "acoustic",
+   "guitar",
+   "acoustic"
+  ],
+  "sec": 97,
+  "id": "29"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/815/815.mp3",
+  "text": "My Little Prince by Michael Ramir C. Corporate Music Reflective 2:12",
+  "pages": [
+   "acoustic",
+   "guitar",
+   "acoustic"
+  ],
+  "sec": 132,
+  "id": "30"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/808/808.mp3",
+  "text": "I'm Hungry! by Michael Ramir C. Jazz Swing Propulsive 1:50",
+  "pages": [
+   "guitar",
+   "travel",
+   "jazz"
+  ],
+  "sec": 110,
+  "id": "31"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/974/974.mp3",
+  "text": "Spanish Heart by Michael Ramir C. Latin Powerful Positive 1:47",
+  "pages": [
+   "guitar",
+   "travel",
+   "summer"
+  ],
+  "sec": 107,
+  "id": "32"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/351/351.mp3",
+  "text": "Slow Pop by Arulo Dream Pop Hopeful 1:38",
+  "pages": [
+   "guitar",
+   "hopeful",
+   "travel"
+  ],
+  "sec": 98,
+  "id": "33"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/953/953.mp3",
+  "text": "Feel Alive by Michael Ramir C. Soul Carefree Fun 1:46",
+  "pages": [
+   "motivational",
+   "travel",
+   "soul"
+  ],
+  "sec": 106,
+  "id": "34"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/272/272.mp3",
+  "text": "Wedding Music by Arulo Orchestral Pop Hopeful 2:09",
+  "pages": [
+   "uplifting",
+   "hopeful",
+   "cinematic"
+  ],
+  "sec": 129,
+  "id": "35"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/443/443.mp3",
+  "text": "Serene View by Arulo Atmospheric Relaxed 1:54",
+  "pages": [
+   "chill",
+   "travel",
+   "chillout"
+  ],
+  "sec": 114,
+  "id": "36"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/766/766.mp3",
+  "text": "Lo-Fi 04 by Lily J Corporate Music Relaxed 2:44",
+  "pages": [
+   "chill",
+   "corporate",
+   "chillout"
+  ],
+  "sec": 164,
+  "id": "37"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/427/427.mp3",
+  "text": "New York by Arulo Lounge Relaxed Positive 1:36",
+  "pages": [
+   "chill",
+   "chillout",
+   "lounge"
+  ],
+  "sec": 96,
+  "id": "38"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/646/646.mp3",
+  "text": "Groovy Jazz by Francisco Alvear Lounge Relaxed Friendly 2:16",
+  "pages": [
+   "chill",
+   "chillout",
+   "lounge"
+  ],
+  "sec": 136,
+  "id": "39"
+ },
+ {
+  "url": "https://assets.mixkit.co/music/645/645.mp3",
+  "text": "Dreamy Jazz by Francisco Alvear Lounge Relaxed Friendly 2:16",
+  "pages": [
+   "chill",
+   "chillout",
+   "lounge"
+  ],
+  "sec": 136,
+  "id": "40"
+ }
+]
