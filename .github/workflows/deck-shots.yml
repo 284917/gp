@@ -3,6 +3,7 @@ name: Demo video
 on:
   push:
     branches: [deck-shots]
+    paths-ignore: ['scripts/video/music.mjs', '.github/workflows/music.yml']
 
 permissions:
   contents: write
